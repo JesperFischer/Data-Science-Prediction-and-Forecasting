@@ -186,9 +186,6 @@ our_hier_rw_agent = function(parameters){
 
 
 
-
-
-
 our_kalman_agent = function(parameters){
   
   dd = get_experiment()
@@ -436,7 +433,7 @@ weighted_Bayes_f = function(parameters) {
   }
   
   df = data.frame(u = u[1:ntrials], cue = cue[1:ntrials], stim = stim[1:ntrials], expect = expect[1:ntrials], pred = pred[1:ntrials], perceptmu = perceptmu[1:ntrials], percept_bin = percept_bin[1:ntrials], percept = percept[1:ntrials], association = association[1:ntrials],
-                  pe = pe[1:ntrials], alpha = alpha, w1 = w1, w2 = w2, percept_precision = percept_precision, beta = beta, x = 1:ntrials, desired = rep(bias,1))
+                  pe = pe[1:ntrials], alpha = alpha, w1 = w1, w2 = w2, percept_precision = percept_precision, beta = beta, trial = 1:ntrials, desired = rep(bias,1))
   
   return(df)
   
@@ -490,7 +487,7 @@ weighted_Bayes_f_v2 = function(alpha, w1, w2, percept_precision, beta) {
   }
   
   df = data.frame(u = u[1:ntrials], cue = cue[1:ntrials], stim = stim[1:ntrials], expect = expect[1:ntrials], pred = pred[1:ntrials], perceptmu = perceptmu[1:ntrials], percept_bin = percept_bin[1:ntrials], percept = percept[1:ntrials], association = association[1:ntrials],
-                  pe = pe[1:ntrials], alpha = alpha, w1 = w1, w2 = w2, percept_precision = percept_precision, beta = beta, x = 1:ntrials, desired = rep(bias,1), id = rnorm(1,0,1))
+                  pe = pe[1:ntrials], alpha = alpha, w1 = w1, w2 = w2, percept_precision = percept_precision, beta = beta, trial = 1:ntrials, desired = rep(bias,1), id = rnorm(1,0,1))
   
   return(df)
   

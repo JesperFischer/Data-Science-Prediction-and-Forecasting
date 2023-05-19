@@ -1,0 +1,161 @@
+---
+title: "Manuscript"
+author: "Jesper Fischer Ehmsen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+pacman::p_load(tidyverse, osfr, lmerTest, MuMIn, DHARMa, here, cmdstanr, tidybayes, bayesplot, posterior,future,furrr, patchwork, R.utils, brms)
+
+scripts = c("agent.R","parameter_recovery.R","stan_functions.R")
+q = lapply(here("scripts", scripts), source)
+```
+
+## R Markdown
+
+```{r parameter recovery for RW}
+mu_alpha = seq(0.1,0.5,by = 0.1)
+kappa_alpha = seq(10,300,length.out = 3)
+
+mu_w1 = seq(0.1,0.5,by = 0.1)
+kappa_w1 = seq(10,300,length.out = 3)
+
+sd_precision_percept = seq(0.1,2, length.out = 3)
+
+sd_beta = seq(0.1,2, length.out = 3)
+
+nsubs = 50
+
+parameters = expand.grid(mu_alpha = mu_alpha,
+                         kappa_alpha = kappa_alpha,
+                         mu_w1 = mu_w1,
+                         kappa_w1 = kappa_w1,
+                         sd_precision_percept = sd_precision_percept,
+                         sd_beta = sd_beta,
+                         nsubs = nsubs)
+
+parameters$id = 1:nrow(parameters)
+
+data_list <- split(parameters, parameters$id)
+
+plan(multisession, workers = availableCores()-1)
+
+data_list = data_list[1:100]
+
+rw_pp = furrr::future_map(data_list, ~parameter_recovery_rw(.x), .progress = TRUE, .options = furrr_options(seed = 123))
+```
+
+
+
+```{r parameter recovery for WB}
+
+mu_alpha = seq(0.1,0.5,by = 0.1)
+kappa_alpha = seq(10,300, length.out = 3)
+
+mu_w1 = seq(0.1,0.5,by = 0.1)
+kappa_w1 = seq(10,300, length.out = 3)
+
+mu_w2 = seq(0.3,0.3,by = 0.1)
+kappa_w2 = seq(10,300, length.out = 3)
+
+sd_percept_precision = seq(0.1,2, length.out = 3)
+
+sd_beta = seq(0.1,2, length.out = 3)
+
+
+nsubs = 50
+
+parameters = expand.grid(nsubs = nsubs, 
+                         mu_alpha = mu_alpha, 
+                         kappa_alpha = kappa_alpha, 
+                         mu_w1 =  mu_w1, kappa_w1 = kappa_w1,
+                         mu_w2 = mu_w2, kappa_w2 = kappa_w2, 
+                         sd_percept_precision = sd_percept_precision, 
+                         sd_beta = sd_beta)
+
+parameters$id = 1:nrow(parameters)
+
+data_list <- split(parameters, parameters$id)
+
+
+plan(multisession, workers = availableCores()-1)
+
+data_list = data_list[1:100]
+
+wb_pp = furrr::future_map(data_list, ~parameter_recovery_wb(.x), .progress = TRUE, .options = furrr_options(seed = 123))
+
+
+```
+
+
+
+
+```{r parameter recovery for Kalman}
+
+
+mu_sigmaEta = seq(1,100,length.out = 3)
+mu_sigmaPsi = seq(1,100,length.out = 3)
+mu_sigmaEpsilon = seq(1,100,length.out = 3)
+
+
+sd_sigmaEta = seq(0.1,10,length.out = 3)
+sd_sigmaPsi = seq(0.1,10,length.out = 3)
+sd_sigmaEpsilon = seq(0.1,10,length.out = 3)
+
+
+nsubs = 5
+
+parameters = expand.grid(mu_sigmaEta = mu_sigmaEta,
+                         mu_sigmaPsi = mu_sigmaPsi,
+                         mu_sigmaEpsilon = mu_sigmaEpsilon,
+                         sd_sigmaEta = sd_sigmaEta,
+                         sd_sigmaPsi = sd_sigmaPsi,
+                         sd_sigmaEpsilon = sd_sigmaEpsilon,
+                         nsubs = nsubs)
+
+parameters$id = 1:nrow(parameters)
+
+data_list <- split(parameters, parameters$id)
+
+
+
+plan(multisession, workers = availableCores()-1)
+
+
+
+data_list = data_list[1:100]
+
+kalman_pp = furrr::future_map(data_list, ~parameter_recovery_kalman(.x), .progress = TRUE, .options = furrr_options(seed = 123))
+
+
+```
+
+
+
+```{r}
+#plot parameterrecovery
+hier_pp <- do.call(rbind, lapply(rw_dd, "[[", 1))
+hier_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
+  ggplot(aes(x = mean, y = reals.reals))+
+  geom_point(aes(col = as.factor(divergences)))+
+  facet_wrap(~variable, scales = "free")+
+  theme_classic()+
+  geom_abline(slope = 1, intercept = 0)+
+  scale_color_manual("divergence?",values = c("black","red"))
+
+
+
+sub_pp <- do.call(rbind, lapply(rw_dd, "[[", 2))
+sub_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
+  ggplot(aes(x = mean, y = reals.reals))+
+  geom_point(aes(col = as.factor(divergences)))+
+  facet_wrap(~variable, scales = "free")+
+  theme_classic()+
+  geom_abline(slope = 1, intercept = 0)+
+  scale_color_manual("divergence?",values = c("black","red"))
+
+
+```
+
