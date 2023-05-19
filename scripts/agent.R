@@ -23,10 +23,7 @@ get_experiment = function(){
 
 
 
-our_rw_agent = function(parameters){
-  
-
-  dd = get_experiment()
+our_rw_agent = function(parameters,dd){
   
   cue = dd$cue
   stim = dd$stim
@@ -186,9 +183,7 @@ our_hier_rw_agent = function(parameters){
 
 
 
-our_kalman_agent = function(parameters){
-  
-  dd = get_experiment()
+our_kalman_agent = function(parameters,dd){
   
   cue = dd$cue
   stim = dd$stim
@@ -259,7 +254,7 @@ our_kalman_agent = function(parameters){
   
   return(data.frame(exp_mu = exp_mu[1:ntrials], perceptmu = perceptmu, pred = pred, percept = percept,
                     percept_bin = percept_bin, trial = 1:ntrials, stim = stim, u = u, association = association[1:ntrials], cue = cue,
-                    sigmaPsi = sigmaPsi, sigmaEta = sigmaEta, sigmaEpsilon = sigmaEpsilon))
+                    sigmaPsi = sigmaPsi, sigmaEta = sigmaEta, sigmaEpsilon = sigmaEpsilon, desired = rep(bias,1)))
   
   
   
@@ -372,21 +367,15 @@ our_hier_kalman_agent = function(parameters){
 
 
 
-weighted_Bayes_f = function(parameters) {
+weighted_Bayes_f = function(parameters,dd) {
   
-  trials = c(40,40,40,40)
-  bias = rep(c(0.1,0.9,0.1,0.9),trials)
-  ntrials = sum(trials)
+  cue = dd$cue
+  stim = dd$stim
+  u = dd$u
+  bias = dd$bias
   
-  cue = rbinom(sum(trials),1,0.5)
+  ntrials = nrow(dd)
   
-  stim = array(sum(trials, NA))
-  for(i in 1:ntrials){
-    stim[i] = ifelse(cue[i] == 1, rbinom(1,1,bias[i]), rbinom(1,1,(1-bias[i])))
-    
-  }
-  
-  u = ifelse(cue == stim, 1,0)
   dd = data.frame(stim = stim, cue = cue, u = u)
   
   dd %>% ggplot(aes(x = 1:nrow(.), y = u, col = as.factor(stim)))+geom_point()+theme_classic()
