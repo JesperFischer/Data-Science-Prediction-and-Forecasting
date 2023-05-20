@@ -7,9 +7,9 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-pacman::p_load(tidyverse, osfr, lmerTest, MuMIn, DHARMa, here, cmdstanr, tidybayes, bayesplot, posterior,future,furrr, patchwork, R.utils, brms)
+pacman::p_load(tidyverse, osfr, lmerTest, MuMIn, DHARMa, here, cmdstanr, tidybayes, bayesplot, posterior,future,furrr, patchwork, R.utils, brms, extraDistr)
 
-scripts = c("agent.R","parameter_recovery.R","stan_functions.R","utility functions.R")
+scripts = c("agent.R","parameter_recovery.R","stan_functions.R","utility functions.R", "model recovery.R")
 q = lapply(here("scripts", scripts), source)
 ```
 
@@ -170,7 +170,74 @@ sub_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>%
 
 
 ```{r model recovery}
+########################################### Resorla wagner parameters:
+mu_alpha = seq(0.1,0.3,length.out = 10)
+kappa_alpha = 50
+mu_w1 = seq(0.1,0.3,length.out = 10)
+kappa_w1 = 50
+sd_precision_percept = 0.5
+sd_beta = 0.5
+nsubs = 10
+parameters = expand.grid(mu_alpha = mu_alpha,
+                         kappa_alpha = kappa_alpha,
+                         mu_w1 = mu_w1,
+                         kappa_w1 = kappa_w1,
+                         sd_precision_percept = sd_precision_percept,
+                         sd_beta = sd_beta,
+                         nsubs = nsubs)
 
+parameters$id = 1:nrow(parameters)
+data_list_rw <- split(parameters, parameters$id)
+
+######################################## Weighted bayes
+
+mu_alpha = rep(0.2,100)
+kappa_alpha = 50
+mu_w1 = 0.2
+kappa_w1 = 50
+mu_w2 = 0.2
+kappa_w2 = 50
+sd_percept_precision = 0.5
+sd_beta = 0.5
+nsubs = 50
+parameters = expand.grid(nsubs = nsubs, 
+                         mu_alpha = mu_alpha, 
+                         kappa_alpha = kappa_alpha, 
+                         mu_w1 =  mu_w1, kappa_w1 = kappa_w1,
+                         mu_w2 = mu_w2, kappa_w2 = kappa_w2, 
+                         sd_percept_precision = sd_percept_precision, 
+                         sd_beta = sd_beta)
+parameters$id = 1:nrow(parameters)
+data_list_wb <- split(parameters, parameters$id)
+
+######################################### Kalman
+
+mu_sigmaEta = rep(50,100)
+mu_sigmaPsi = 10
+mu_sigmaEpsilon = 0.1
+sd_sigmaEta = 0.1
+sd_sigmaPsi = 0.1
+sd_sigmaEpsilon = 0.1
+nsubs = 50
+parameters = expand.grid(mu_sigmaEta = mu_sigmaEta,
+                         mu_sigmaPsi = mu_sigmaPsi,
+                         mu_sigmaEpsilon = mu_sigmaEpsilon,
+                         sd_sigmaEta = sd_sigmaEta,
+                         sd_sigmaPsi = sd_sigmaPsi,
+                         sd_sigmaEpsilon = sd_sigmaEpsilon,
+                         nsubs = nsubs)
+parameters$id = 1:nrow(parameters)
+data_list_kalman <- split(parameters, parameters$id)
+
+
+######################################### fit data_rw:
+#loos = model_fitter_rwdata(data_list_rw[[1]])
+
+data_list = data_list_rw[1:3]
+
+plan(multisession, workers = 5)
+
+rw_loo = furrr::future_map(data_list, ~model_fitter_rwdata(.x), .progress = TRUE, .options = furrr_options(seed = 123))
 
 
 ```
@@ -254,6 +321,12 @@ fit <- mod$sample(
 
 
 
+sum = fit$summary(variables = c("mu_alpha","mu_w1","sd_beta","sd_precision_percept", "kappa_alpha","kappa_w1","alpha","w1","beta","precision_percept"))
+
+variabless = c("mu_alpha[1]","mu_w1[1]","sd_beta[1]","sd_precision_percept[1]","mu_alpha[2]","mu_w1[2]","sd_beta[2]","sd_precision_percept[2]")
+
+pairs = mcmc_pairs(fit$draws(variables = variabless), np = nuts_params(fit), pars = variabless,
+                   off_diag_args = list(size = 0.75))
 ```
 
 

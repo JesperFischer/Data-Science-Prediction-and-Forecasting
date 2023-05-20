@@ -3,11 +3,14 @@
 data {
   int<lower=1> nsubs;
   int<lower=0> ntrials;
-  matrix[ntrials, nsubs] cue;
-  matrix[ntrials, nsubs] stim;
-  int pred[ntrials, nsubs];
   matrix[ntrials, nsubs] percept;
+  int pred[ntrials, nsubs];
   int percept_bin[ntrials, nsubs];
+  
+  matrix[ntrials, nsubs] stim;
+  matrix[ntrials, nsubs] cue;
+  
+
 }
 
 parameters {

@@ -94,6 +94,10 @@ parameter_recovery_wb = function(parameters){
                stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)),
                cue = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)))
   
+  
+  
+  
+
   mod = cmdstan_model(here::here("Stan","no generated quantities","hier_weighted_bayes_nogen.stan"))
   
   
