@@ -1,7 +1,6 @@
 #model recovery
 
 
-
 model_fitter_rwdata = function(parameters_rw){
   
   
@@ -25,7 +24,7 @@ model_fitter_rwdata = function(parameters_rw){
                stim = as.matrix(data_rw %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)),
                cues = as.matrix(data_rw %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)))
   
-
+  id = rnorm(1,0,1)
   
   
   
@@ -35,6 +34,7 @@ model_fitter_rwdata = function(parameters_rw){
   
   
   data1_rw_wb = data1_rw
+  data1_rw_kalman = data1_rw
   
   names(data1_rw_wb) = c("nsubs","ntrials","percept","pred","percept_bin","stim","cue")
   data1_rw_wb$stim = ifelse(data1_rw_wb$stim == 1, 0.999, 0.001)
@@ -47,14 +47,15 @@ model_fitter_rwdata = function(parameters_rw){
   loo_rw_kalman = get_loo(kalman_model, data1_rw_kalman)
   
   
-  comparison = loo_compare(list(loo_rw_rw[[3]],loo_rw_wb[[3]],loo_rw_kalman[[3]]))
-  
+  comparison = data.frame(loo_compare(list(loo_rw_rw[[3]],loo_rw_wb[[3]],loo_rw_kalman[[3]])))
+  comparison$id = id
 
   return(list(data.frame(names = c("rw",
                                    "wb",
                                    "kalman"),
                          means = c(loo_rw_rw[[1]],loo_rw_wb[[1]],loo_rw_kalman[[1]]),
-                         sds = c(loo_rw_rw[[2]],loo_rw_wb[[2]],loo_rw_kalman[[2]])),
+                         sds = c(loo_rw_rw[[2]],loo_rw_wb[[2]],loo_rw_kalman[[2]]),
+                         id = id),
               comparison))
 }
 
@@ -73,6 +74,7 @@ model_fitter_wbdata = function(parameters_wb){
     TRUE ~ .
   )))
   
+  data_wb$stim = ifelse(data_wb$stim > 0.5, 1, 0)
   
   data1_wb = list(nsubs = length(unique(data_wb$id)),
                   ntrials = nrow(data_wb %>% filter(id %in% unique(id)[1])),
@@ -84,30 +86,46 @@ model_fitter_wbdata = function(parameters_wb){
   
  
   
+  
+  
+  data1_wb_rw = data1_wb
+  data1_wb_kalman = data1_wb
+  
+  names(data1_wb_rw) = c("nsubs","ntrials","percept","expectPain","percept_bin","stim","cues")
+  names(data1_wb_kalman) = c("nsubs","ntrials","percept","expectPain","percept_bin","stim","cues")
+  
+  data1_wb_kalman$u = as.matrix(data_wb %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
+  
+  
+  data1_wb$stim = ifelse(data1_wb$stim == 1, 0.999, 0.001)
+  
   rw_model = here::here("Stan","myRW_real.stan")
   wb_model = here::here("Stan","hier_weighted_bayes.stan")
   kalman_model = here::here("Stan","myKalmanfilter.stan")
   
+  id = rnorm(1,0,1)
   
-  
-  loo_wb_rw = get_loo(rw_model, data1_wb)
+  loo_wb_rw = get_loo(rw_model, data1_wb_rw)
   loo_wb_wb = get_loo(wb_model, data1_wb)
-  loo_wb_kalman = get_loo(kalman_model, data1_wb)
+  loo_wb_kalman = get_loo(kalman_model, data1_wb_kalman)
   
    
-  comparison = loo_compare(list(loo_wb_rw[[3]],loo_wb_wb[[3]],loo_wb_kalman[[3]]))
-  
-  weights = loo_model_weights(list(loo_wb_rw[[3]],loo_wb_wb[[3]],loo_wb_kalman[[3]]))
+  comparison = data.frame(loo_compare(list(loo_wb_rw[[3]],loo_wb_wb[[3]],loo_wb_kalman[[3]])))
+  comparison$id = id
   
   return(list(data.frame(names = c("rw",
                                    "wb",
                                    "kalman"),
                          means = c(loo_wb_rw[[1]],loo_wb_wb[[1]],loo_wb_kalman[[1]]),
-                         sds = c(loo_wb_rw[[2]],loo_wb_wb[[2]],loo_wb_kalman[[2]])),
-              comparison, weights))
+                         sds = c(loo_wb_rw[[2]],loo_wb_wb[[2]],loo_wb_kalman[[2]]),
+                         id = id),
+              comparison))
 
   
 }
+
+
+
 model_fitter_kalmandata = function(parameters_kalman){
   
   
@@ -142,22 +160,32 @@ model_fitter_kalmandata = function(parameters_kalman){
   
   
   
-  loo_kalman_rw = get_loo(rw_model, data1_kalman)
-  loo_kalman_wb = get_loo(wb_model, data1_kalman)
+  data1_kalman_rw = data1_kalman
+  data1_kalman_wb = data1_kalman
+  
+  data1_kalman_wb$u = NULL
+  names(data1_kalman_wb) = c("nsubs","ntrials","percept","pred","percept_bin","stim","cue")
+  data1_kalman_wb$stim = ifelse(data1_kalman_wb$stim == 1, 0.999, 0.001)
+  
+  
+  data1_kalman_rw$u = NULL
+  
+  loo_kalman_rw = get_loo(rw_model, data1_kalman_rw)
+  loo_kalman_wb = get_loo(wb_model, data1_kalman_wb)
   loo_kalman_kalman = get_loo(kalman_model, data1_kalman)
 
+  id = rnorm(1,0,1)
   
-  
-  comparison = loo_compare(list(loo_kalman_rw[[3]],loo_kalman_wb[[3]],loo_kalman_kalman[[3]]))
-  
-  weights = loo_model_weights(list(loo_kalman_rw[[3]],loo_kalman_wb[[3]],loo_kalman_kalman[[3]]))
+  comparison = data.frame(loo_compare(list(loo_kalman_rw[[3]],loo_kalman_wb[[3]],loo_kalman_kalman[[3]])))
+  comparison$id = id
   
   return(list(data.frame(names = c("rw",
                                    "wb",
                                    "kalman"),
                          means = c(loo_kalman_rw[[1]],loo_kalman_wb[[1]],loo_kalman_kalman[[1]]),
-                         sds = c(loo_kalman_rw[[2]],loo_kalman_wb[[2]],loo_kalman_kalman[[2]])),
-              comparison, weights))
+                         sds = c(loo_kalman_rw[[2]],loo_kalman_wb[[2]],loo_kalman_kalman[[2]]),
+                         id = id),
+              comparison))
   
   
   

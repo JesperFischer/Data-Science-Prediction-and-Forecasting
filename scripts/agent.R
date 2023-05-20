@@ -190,8 +190,6 @@ our_kalman_agent = function(parameters,dd){
   u = dd$u
   bias = dd$bias
   
-  
-  
   ntrials = nrow(dd)
   
   percept = array(NA, ntrials)
@@ -213,11 +211,13 @@ our_kalman_agent = function(parameters,dd){
   association = array(NA,ntrials)
   
   association[1] = 0.5
-  exp_var[1] = 2
+  
   
   sigmaEta = parameters$sigmaEta
   sigmaEpsilon = parameters$sigmaEpsilon
   sigmaPsi = parameters$sigmaPsi
+  
+  exp_var[1] = sigmaEta
   
   for(t in 1:ntrials){
     
@@ -231,7 +231,7 @@ our_kalman_agent = function(parameters,dd){
     
     
     perceptmu[t] =  (sigmaEpsilon * exp_mu[t] + (sigmaPsi + exp_var[t]) * stim[t] ) / 
-      (sigmaEpsilon + sigmaPsi + exp_var[t]);
+      (sigmaEpsilon + sigmaPsi + exp_var[t])
     
     perceptvar[t] = ( sigmaEpsilon * (sigmaPsi + exp_var[t]) ) / (sigmaEpsilon + sigmaPsi + exp_var[t])
     
@@ -254,12 +254,97 @@ our_kalman_agent = function(parameters,dd){
   
   return(data.frame(exp_mu = exp_mu[1:ntrials], perceptmu = perceptmu, pred = pred, percept = percept,
                     percept_bin = percept_bin, trial = 1:ntrials, stim = stim, u = u, association = association[1:ntrials], cue = cue,
-                    sigmaPsi = sigmaPsi, sigmaEta = sigmaEta, sigmaEpsilon = sigmaEpsilon, desired = rep(bias,1)))
+                    sigmaPsi = sigmaPsi, sigmaEta = sigmaEta, sigmaEpsilon = sigmaEpsilon, desired = rep(bias,1),exp_var = exp_var[1:ntrials], perceptvar = perceptvar[1:ntrials]))
   
   
   
   
 }
+
+
+our_kalman_agent22 = function(parameters,dd){
+  
+  cue = dd$cue
+  stim = dd$stim
+  u = dd$u
+  bias = dd$bias
+  
+  ntrials = nrow(dd)
+  
+  percept = array(NA, ntrials)
+  perceptmu = array(NA, ntrials)
+  perceptvar = array(NA, ntrials)
+  perceptprec = array(NA,ntrials)
+  
+  
+  
+  exp_mu = array(NA, ntrials)
+  exp_var = array(NA, ntrials)
+  exp_prec = array(NA, ntrials)  
+  
+  association = array(NA, ntrials)
+  pred = array(NA,ntrials)
+  pe = array(NA,ntrials)
+  percept_bin = array(NA,ntrials)
+  
+  association = array(NA,ntrials)
+  
+  association[1] = 0.5
+  
+  
+  sigmaEta = parameters$sigmaEta
+  sigmaEpsilon = parameters$sigmaEpsilon
+  sigmaPsi = parameters$sigmaPsi
+  precision_percept = parameters$precision_percept
+  beta = parameters$beta
+  
+  exp_var[1] = sigmaEta
+  
+  for(t in 1:ntrials){
+    
+    exp_mu[t] = ifelse(cue[t] == 1, association[t], 1-association[t])
+    
+    exp_prec[t] = 1/exp_var[t]
+    
+    exp_mu[t] = ifelse(exp_mu[t] > 0.999, 0.999, ifelse(exp_mu[t] < 0.001, 0.001, exp_mu[t]))
+    
+    pred[t] = rbinom(1,1,(exp_mu[t]^beta[t])/((exp_mu[t]^beta[t])+(1-exp_mu[t])^(beta[t])))
+    
+    
+    perceptmu[t] =  (sigmaEpsilon * exp_mu[t] + (sigmaPsi + exp_var[t]) * stim[t] ) / 
+      (sigmaEpsilon + sigmaPsi + exp_var[t])
+    
+    perceptvar[t] = ( sigmaEpsilon * (sigmaPsi + exp_var[t]) ) / (sigmaEpsilon + sigmaPsi + exp_var[t])
+    
+    perceptprec[t]= 1/perceptvar[t]
+    
+    perceptmu[t] = ifelse(perceptmu[t] > 0.999, 0.999, ifelse(perceptmu[t] < 0.001, 0.001, perceptmu[t]))
+    
+    percept[t] = extraDistr::rprop(1,precision_percept,perceptmu[t])
+    
+    
+    percept_bin[t] = rbinom(1,1,(perceptmu[t]^beta[t])/((perceptmu[t]^beta[t])+(1-perceptmu[t])^(beta[t])))
+    
+    association[t+1] <- ((sigmaEpsilon + sigmaPsi) * association[t] + (exp_var[t] * u[t])) / 
+      (sigmaEpsilon + sigmaPsi + exp_var[t])
+    
+    exp_var[t+1] <- ((sigmaEpsilon + sigmaPsi) * exp_var[t] / (sigmaEpsilon + sigmaPsi + exp_var[t])) + sigmaEta
+    
+  }
+  
+  
+  return(data.frame(exp_mu = exp_mu[1:ntrials], perceptmu = perceptmu, pred = pred, percept = percept,
+                    percept_bin = percept_bin, trial = 1:ntrials, stim = stim, u = u, association = association[1:ntrials], cue = cue,
+                    sigmaPsi = sigmaPsi, sigmaEta = sigmaEta, sigmaEpsilon = sigmaEpsilon, desired = rep(bias,1),exp_var = exp_var[1:ntrials],
+                    perceptvar = perceptvar[1:ntrials], id = rnorm(1,0,1)))
+  
+  
+  
+  
+}
+
+
+
 
 
 our_kalman_agent_v2 = function(sigmaEta, sigmaEpsilon, sigmaPsi){
@@ -294,7 +379,7 @@ our_kalman_agent_v2 = function(sigmaEta, sigmaEpsilon, sigmaPsi){
   association = array(NA,ntrials)
   
   association[1] = 0.5
-  exp_var[1] = 2
+  exp_var[1] = sigmaEta
   
   for(t in 1:ntrials){
     
