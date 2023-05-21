@@ -44,7 +44,7 @@ parameter_recovery_rw = function(parameters){
   
   
   fit <- tryCatch({
-    fit = withTimeout(fitter(), timeout = 1500)
+    fit = withTimeout(fitter(), timeout = 1000, cpu = 1000)
   }, error = function(e) {
     print("An error occurred!")
     return(NA)

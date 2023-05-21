@@ -8,8 +8,8 @@ data {
   array[ntrials, nsubs,sesions] int pred; // prediciton
   array[ntrials, nsubs,sesions] int percept_bin; // prediciton
   
-  array[ntrials, nsubs,sesions] int stim; // observations
-  array[ntrials, nsubs,sesions] int cues; // observations
+  array[ntrials, nsubs,sesions] real stim; // observations
+  array[ntrials, nsubs,sesions] int cue; // observations
 }
 
 parameters {
@@ -55,7 +55,7 @@ transformed parameters{
             expect[t,s,sess] = 1-association[t,s,sess];
           }
         
-       
+        
         perceptmu[t,s,sess] = inv_logit(w1[s,sess] * logit(stim[t,s,sess]) + w2[s,sess] * logit(expect[t,s,sess]));
         
         
@@ -66,9 +66,12 @@ transformed parameters{
           }
           
         association[t+1,s,sess] = association[t,s,sess] + alpha[s,sess] * pe[t,s,sess];
+        
+        
       }
     }
   }
+  
 }
 
 
@@ -110,7 +113,7 @@ model {
 }
 
 generated quantities{
-  array[sesions] real <lower=0> prior_sd_precision_percept;
+  array[sesions] real <lower=0> prior_sd_percept_precision;
   array[sesions] real <lower=0> prior_sd_beta;
   
   array[sesions] real <lower=0> prior_kappa_alpha;
@@ -125,13 +128,13 @@ generated quantities{
   //subject level
   
   array[nsubs,sesions] real <lower=0, upper = 1> prior_alpha;
-  array[nsubs,sesions] real <lower=0> prior_precision_percept;
+  array[nsubs,sesions] real <lower=0> prior_percept_precision;
   array[nsubs,sesions] real <lower=0> prior_beta;
   array[nsubs,sesions] real <lower=0, upper = 1> prior_w1;
   array[nsubs,sesions] real <lower=0, upper = 1> prior_w2;
   
   //trial level:
-  array[ntrials, nsubs,sesions] real <lower=0, upper  = 1> prior_painMu; 
+  array[ntrials, nsubs,sesions] real <lower=0, upper  = 1> prior_perceptmu; 
   array[ntrials+1, nsubs,sesions] real <lower=0, upper  = 1> prior_association; 
   array[ntrials+1, nsubs,sesions] real <lower=0, upper  = 1> prior_expect;
   array[ntrials, nsubs,sesions] real prior_pe;
