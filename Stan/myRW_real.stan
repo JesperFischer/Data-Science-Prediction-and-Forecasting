@@ -85,8 +85,8 @@ model {
     target += beta_proportion_lpdf(alpha[s] | mu_alpha , kappa_alpha);
     target += beta_proportion_lpdf(w1[s] | mu_w1 , kappa_w1);
 
-    target += lognormal_lpdf(precision_percept[s] | log(10), sd_precision_percept);
-    target += lognormal_lpdf(beta[s] | log(10), sd_beta);
+    target += lognormal_lpdf(precision_percept[s] | log(20), sd_precision_percept);
+    target += lognormal_lpdf(beta[s] | log(20), sd_beta);
     
   }
   

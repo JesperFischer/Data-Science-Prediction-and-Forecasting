@@ -3,8 +3,9 @@ title: "equations"
 author: "Jesper Fischer Ehmsen"
 date: "`r Sys.Date()`"
 output:
-  word_document: default
+  pdf_document: default
   html_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -66,7 +67,7 @@ S_t \sim \mathcal{N}{(\psi{_t}, \sigma_s^2)}
 $$
 
 
-Next we assume that the mean of this normal distribution is sampled from another normal distribution with the expectation at trial t as its mean
+Next we assume that the mean of this normal distribution is sampled from another normal distribution with the expectation at trial t as its mean 
 
 $$
 \begin{equation}
@@ -164,4 +165,12 @@ E_{t} = \alpha_{t}*\psi_{t}+(1-\alpha_{t})*E_{t}
 $$
 For the derivation of equation 15 and 16 readers are refereed to the supplementary material.
 
+
+
+
+```{r}
+
+
+
+```
 

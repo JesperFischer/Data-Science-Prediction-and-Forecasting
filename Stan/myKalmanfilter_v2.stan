@@ -17,6 +17,9 @@ parameters {
   vector<lower=0>[nsubs] sigmaEta;
   vector<lower=0>[nsubs] sigmaPsi;
   vector<lower=0>[nsubs] sigmaEpsilon;
+  vector<lower=0>[nsubs] precision_percept;
+  vector<lower=0>[nsubs] beta;
+  
   
   // Group-level parameters
   real  mu_sigmaEpsilon;
@@ -26,6 +29,9 @@ parameters {
   real <lower=0> sd_sigmaEpsilon;
   real <lower=0> sd_sigmaEta;
   real <lower=0> sd_sigmaPsi;
+  
+  real <lower=0> sd_beta;
+  real <lower=0> sd_precision_percept;
   
 }
 
@@ -99,15 +105,17 @@ model {
     target += lognormal_lpdf(sigmaEta[s] | mu_sigmaEta, sd_sigmaEta);
     target += lognormal_lpdf(sigmaPsi[s] | mu_sigmaPsi, sd_sigmaPsi);
     target += lognormal_lpdf(sigmaEpsilon[s] | mu_sigmaEpsilon, sd_sigmaEpsilon);
+    target += lognormal_lpdf(precision_percept[s] | log(20), sd_precision_percept);
+    target += lognormal_lpdf(beta[s] | log(20), sd_beta);
     
     
     
     for (t in 1:ntrials){
-      target += beta_proportion_lpdf(percept[t,s] | perceptmu[t,s], 1/perceptvar[t,s]);
+      target += beta_proportion_lpdf(percept[t,s] | perceptmu[t,s], precision_percept[s]);
       
-      target += bernoulli_lpmf(percept_bin[t,s] | (perceptmu[t,s]^(1/perceptvar[t,s]))/((perceptmu[t,s]^(1/perceptvar[t,s]))+(1-perceptmu[t,s])^(1/perceptvar[t,s])));
+      target += bernoulli_lpmf(percept_bin[t,s] | (perceptmu[t,s]^beta[s])/((perceptmu[t,s]^beta[s])+(1-perceptmu[t,s])^beta[s]));
 
-      target += bernoulli_lpmf(expectPain[t,s] |  (exp_mu[t,s]^(1/exp_var[t,s]))/((exp_mu[t,s]^(1/exp_var[t,s]))+(1-exp_mu[t,s])^(1/exp_var[t,s])));
+      target += bernoulli_lpmf(expectPain[t,s] |  (exp_mu[t,s]^beta[s])/((exp_mu[t,s]^beta[s])+(1-exp_mu[t,s])^beta[s]));
   
     }
     
@@ -123,6 +131,9 @@ model {
   target += lognormal_lpdf(sd_sigmaPsi | 0 , 1);
   target += lognormal_lpdf(sd_sigmaEpsilon | 0 , 1);
   
+  target += exponential_lpdf(sd_precision_percept | 1);
+  target += exponential_lpdf(sd_beta | 1);
+  
 }
 
 
@@ -131,6 +142,8 @@ generated quantities{
   vector<lower=0>[nsubs] prior_sigmaEta;
   vector<lower=0>[nsubs] prior_sigmaPsi;
   vector<lower=0>[nsubs] prior_sigmaEpsilon;
+  real <lower=0> prior_precision_percept[nsubs];
+  real <lower=0> prior_beta[nsubs];
   
   // Group-level parameters
   real  prior_mu_sigmaEpsilon;
@@ -140,6 +153,9 @@ generated quantities{
   real <lower=0> prior_sd_sigmaEpsilon;
   real <lower=0> prior_sd_sigmaEta;
   real <lower=0> prior_sd_sigmaPsi;
+
+  real <lower=0> prior_sd_precision_percept;
+  real <lower=0> prior_sd_beta;
   
   //trial level
   matrix <lower=0, upper  = 1> [ntrials, nsubs] prior_perceptmu;
@@ -176,13 +192,20 @@ generated quantities{
   prior_sd_sigmaEpsilon = lognormal_rng(0 , 1);
   
   
+  prior_sd_precision_percept = exponential_rng(1);
+  prior_sd_beta = exponential_rng(1);
+  
+  
   
   
   for (s in 1:nsubs) {
       prior_sigmaEta[s] = lognormal_rng(prior_mu_sigmaEta, prior_sd_sigmaEta);
       prior_sigmaPsi[s] = lognormal_rng(prior_mu_sigmaPsi, prior_sd_sigmaPsi);
       prior_sigmaEpsilon[s] = lognormal_rng(prior_mu_sigmaEpsilon, prior_sd_sigmaEpsilon);
-    
+      
+      prior_precision_percept[s] = lognormal_rng(log(20), prior_sd_precision_percept);
+      prior_beta[s] = lognormal_rng(log(20), prior_sd_beta);
+        
     
     
       prior_association[1,s] = 0.5;
@@ -232,23 +255,23 @@ generated quantities{
                 prior_perceptmu[t,s] = 0.5;
             }
       
-      prior_percept[t,s] = beta_proportion_rng(prior_perceptmu[t,s], 1/prior_perceptvar[t,s]);
+      prior_percept[t,s] = beta_proportion_rng(prior_perceptmu[t,s], prior_precision_percept[s]);
       
-      prior_percept_bin[t,s] = bernoulli_rng((prior_perceptmu[t,s]^(1/prior_perceptvar[t,s]))/((prior_perceptmu[t,s]^(1/prior_perceptvar[t,s]))+(1-prior_perceptmu[t,s])^(1/prior_perceptvar[t,s])));
+      prior_percept_bin[t,s] = bernoulli_rng((prior_perceptmu[t,s]^prior_beta[s])/((prior_perceptmu[t,s]^prior_beta[s])+(1-prior_perceptmu[t,s])^prior_beta[s]));
 
-      prior_expectPain[t,s] = bernoulli_rng((prior_exp_mu[t,s]^(1/prior_exp_var[t,s]))/((prior_exp_mu[t,s]^(1/prior_exp_var[t,s]))+(1-prior_exp_mu[t,s])^(1/prior_exp_var[t,s])));
+      prior_expectPain[t,s] = bernoulli_rng((prior_exp_mu[t,s]^prior_beta[s])/((prior_exp_mu[t,s]^prior_beta[s])+(1-prior_exp_mu[t,s])^prior_beta[s]));
       
-      post_percept[t,s] = beta_proportion_rng(perceptmu[t,s], 1/perceptvar[t,s]);
+      post_percept[t,s] = beta_proportion_rng(perceptmu[t,s], precision_percept[s]);
       
-      post_percept_bin[t,s] = bernoulli_rng((perceptmu[t,s]^(1/perceptvar[t,s]))/((perceptmu[t,s]^(1/perceptvar[t,s]))+(1-perceptmu[t,s])^(1/perceptvar[t,s])));
+      post_percept_bin[t,s] = bernoulli_rng((perceptmu[t,s]^beta[s])/((perceptmu[t,s]^beta[s])+(1-perceptmu[t,s])^beta[s]));
 
-      post_expectPain[t,s] = bernoulli_rng((exp_mu[t,s]^(1/exp_var[t,s]))/((exp_mu[t,s]^(1/exp_var[t,s]))+(1-exp_mu[t,s])^(1/exp_var[t,s])));
+      post_expectPain[t,s] = bernoulli_rng((exp_mu[t,s]^beta[s])/((exp_mu[t,s]^beta[s])+(1-exp_mu[t,s])^beta[s]));
       
       
       
-      log_lik[t,s] = bernoulli_lpmf(percept_bin[t,s] | (perceptmu[t,s]^(1/perceptvar[t,s]))/((perceptmu[t,s]^(1/perceptvar[t,s]))+(1-perceptmu[t,s])^(1/perceptvar[t,s])))+
-                     beta_proportion_lpdf(percept[t,s] | perceptmu[t,s], 1/perceptvar[t,s])+
-                     bernoulli_lpmf(expectPain[t,s] |  (exp_mu[t,s]^(1/exp_var[t,s]))/((exp_mu[t,s]^(1/exp_var[t,s]))+(1-exp_mu[t,s])^(1/exp_var[t,s])));
+      log_lik[t,s] = bernoulli_lpmf(percept_bin[t,s] | (perceptmu[t,s]^beta[s])/((perceptmu[t,s]^beta[s])+(1-perceptmu[t,s])^beta[s]))+
+                     beta_proportion_lpdf(percept[t,s] | perceptmu[t,s], precision_percept[s])+
+                     bernoulli_lpmf(expectPain[t,s] |  (exp_mu[t,s]^beta[s])/((exp_mu[t,s]^beta[s])+(1-exp_mu[t,s])^beta[s]));
       
     }
   }

@@ -30,7 +30,7 @@ model_fitter_rwdata = function(parameters_rw){
   
   rw_model = here::here("Stan","myRW_real.stan")
   wb_model = here::here("Stan","hier_weighted_bayes.stan")
-  kalman_model = here::here("Stan","myKalmanfilter.stan")
+  kalman_model = here::here("Stan","myKalmanfilter_v2.stan")
   
   
   data1_rw_wb = data1_rw
@@ -101,7 +101,7 @@ model_fitter_wbdata = function(parameters_wb){
   
   rw_model = here::here("Stan","myRW_real.stan")
   wb_model = here::here("Stan","hier_weighted_bayes.stan")
-  kalman_model = here::here("Stan","myKalmanfilter.stan")
+  kalman_model = here::here("Stan","myKalmanfilter_v2.stan")
   
   id = rnorm(1,0,1)
   
@@ -109,7 +109,6 @@ model_fitter_wbdata = function(parameters_wb){
   loo_wb_wb = get_loo(wb_model, data1_wb)
   loo_wb_kalman = get_loo(kalman_model, data1_wb_kalman)
   
-   
   comparison = data.frame(loo_compare(list(loo_wb_rw[[3]],loo_wb_wb[[3]],loo_wb_kalman[[3]])))
   comparison$id = id
   

@@ -112,14 +112,14 @@ ppu_hier = function(fit,parameters,reals){
       df = rbind(post,priors)
       
       if(!is.na(reals)[1]){
-        reals = hier %>% select(grep(parameter,names(hier), value = TRUE))
+        reals2 = reals %>% select(grep(parameter,names(reals), value = TRUE))
         
         plot1 = df %>% pivot_longer(cols = post_parameters)%>% 
           ggplot(aes(x = value, fill = posterior))+
           geom_histogram(alpha = 0.5, position="identity")+
           facet_wrap(~name, scales = "free")+
           theme_classic()+
-          geom_vline(data = reals %>% pivot_longer(cols = post_parameters), aes(xintercept = value))
+          geom_vline(data = reals2 %>% pivot_longer(cols = post_parameters), aes(xintercept = value))
       
         plots[[q]] = plot1
       }else{

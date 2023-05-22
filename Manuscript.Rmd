@@ -18,7 +18,23 @@ q = lapply(here("scripts", scripts), source)
 
 
 ```{r parameters visualization}
-RW()
+dd = get_experiment()
+
+rwplot = RW(dd)
+
+kalmanplot = KALMAN_v2(dd)
+
+wbplot = WB(dd)
+
+layout = (c(
+  area(1, 1),
+  area(1, 2),
+  area(2, 1),
+  area(2, 2)
+  
+))
+
+plot_spacer()+kalmanplot+rwplot+wbplot+plot_layout(design = layout)
 
 ```
 
@@ -53,6 +69,11 @@ plan(multisession, workers = 3)
 data_list1 = data_list[501:600]
 
 rw_pp = furrr::future_map(data_list, ~parameter_recovery_rw(.x), .progress = TRUE, .options = furrr_options(seed = 123))
+
+
+
+
+
 ```
 
 
@@ -103,17 +124,22 @@ wb_pp = furrr::future_map(data_list, ~parameter_recovery_wb(.x), .progress = TRU
 ```{r parameter recovery for Kalman}
 
 
-mu_sigmaEta = seq(1,100,length.out = 3)
-mu_sigmaPsi = seq(1,100,length.out = 3)
-mu_sigmaEpsilon = seq(1,100,length.out = 3)
+mu_sigmaEta = seq(0.1,1,length.out = 3)
+mu_sigmaPsi = seq(0.1,1,length.out = 3)
+mu_sigmaEpsilon = seq(0.1,1,length.out = 3)
 
 
-sd_sigmaEta = seq(0.1,10,length.out = 3)
-sd_sigmaPsi = seq(0.1,10,length.out = 3)
-sd_sigmaEpsilon = seq(0.1,10,length.out = 3)
+sd_sigmaEta = seq(0.1,1,length.out = 3)
+sd_sigmaPsi = seq(0.1,1,length.out = 3)
+sd_sigmaEpsilon = seq(0.1,1,length.out = 3)
+
+sd_precision_percept = seq(0.1,2, length.out = 3)
+
+sd_beta = seq(0.1,2, length.out = 3)
 
 
-nsubs = 50
+
+nsubs = 10
 
 parameters = expand.grid(mu_sigmaEta = mu_sigmaEta,
                          mu_sigmaPsi = mu_sigmaPsi,
@@ -121,6 +147,8 @@ parameters = expand.grid(mu_sigmaEta = mu_sigmaEta,
                          sd_sigmaEta = sd_sigmaEta,
                          sd_sigmaPsi = sd_sigmaPsi,
                          sd_sigmaEpsilon = sd_sigmaEpsilon,
+                         sd_precision_percept = sd_precision_percept, 
+                         sd_beta = sd_beta,
                          nsubs = nsubs)
 
 parameters$id = 1:nrow(parameters)
@@ -144,7 +172,7 @@ kalman_pp = furrr::future_map(data_list, ~parameter_recovery_kalman(.x), .progre
 
 ```{r}
 #plot parameterrecovery
-hier_pp <- do.call(rbind, lapply(rw_dd, "[[", 1))
+hier_pp <- do.call(rbind, lapply(rw_pp, "[[", 1))
 hier_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
   ggplot(aes(x = mean, y = reals.reals))+
   geom_point(aes(col = as.factor(divergences)))+
@@ -155,7 +183,7 @@ hier_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>%
 
 
 
-sub_pp <- do.call(rbind, lapply(rw_dd, "[[", 2))
+sub_pp <- do.call(rbind, lapply(rw_pp, "[[", 2))
 sub_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
   ggplot(aes(x = mean, y = reals.reals))+
   geom_point(aes(col = as.factor(divergences)))+
@@ -246,9 +274,9 @@ full_loo <- map_dfr(rw_loo, ~ .x[[2]])
 
 ########################################## fit data_wb
 
-data_list = data_list_wb[1]
+data_list = data_list_wb[1:100]
 
-plan(multisession, workers = 5)
+plan(multisession, workers = 10)
 
 wb_loo = furrr::future_map(data_list, ~model_fitter_wbdata(.x), .progress = TRUE, .options = furrr_options(seed = 123))
 
@@ -387,102 +415,121 @@ rw_fit_sess2$diagnostic_summary()
 ```
 
 
-<!-- ```{r fitting Kalman model to session 1} -->
-<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>%  -->
-<!--   rename_all(tolower) %>%  -->
-<!--   filter(trial != 0) %>%  -->
-<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%  -->
-<!--   mutate_all(replace_na, 0) -->
+```{r fitting Kalman model to session 1}
+df= read.csv(here::here("data_TPL_AC.csv")) %>%
+  rename_all(tolower) %>%
+  filter(trial != 0) %>%
+  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
+  mutate_all(replace_na, 0)
 
-<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
-
-
-<!-- df = df %>% filter(session == 1) -->
+df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
 
 
-<!-- #fitting hierachically -->
-<!-- data = df %>% mutate(percept = percept/100) -->
+df = df %>% filter(session == 1, id > 40)
 
 
-
-<!-- data = data %>% mutate(across(percept, ~case_when( -->
-<!--     . < 0.001 ~ 0.001, -->
-<!--     . > 0.999 ~ 0.999, -->
-<!--     TRUE ~ . -->
-<!--   ))) -->
-
-
-<!-- data1 = list(nsubs = length(unique(data$id)), -->
-<!--             ntrials = nrow(data %>% filter(id %in% unique(id)[1])), -->
-<!--             percept = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept)%>% mutate(trial= NULL)), -->
-<!--             expectPain = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)), -->
-<!--             percept_bin = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept_bin)%>% mutate(trial= NULL)), -->
-<!--             stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)), -->
-<!--             cues = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)), -->
-<!--             u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL)) -->
-<!--             ) -->
-
-
-<!-- mod = cmdstan_model(here::here("Stan","myKalmanfilter.stan")) -->
-
-<!-- kalman_fit_sess1 <- mod$sample( -->
-<!--       data = data1, -->
-<!--       chains = 4,  -->
-<!--       parallel_chains = 4, -->
-<!--       refresh = 100, -->
-<!--       adapt_delta = 0.90, -->
-<!--       max_treedepth = 12 -->
-<!--     ) -->
-<!-- ``` -->
-
-
-<!-- ```{r fitting Kalman model to session 2} -->
-<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>%  -->
-<!--   rename_all(tolower) %>%  -->
-<!--   filter(trial != 0) %>%  -->
-<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%  -->
-<!--   mutate_all(replace_na, 0) -->
-
-<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
-
-
-<!-- df = df %>% filter(session == 2) -->
-
-
-<!-- #fitting hierachically -->
-<!-- data = df %>% mutate(percept = percept/100) -->
+#fitting hierachically
+data = df %>% mutate(percept = percept/100)
 
 
 
-<!-- data = data %>% mutate(across(percept, ~case_when( -->
-<!--     . < 0.001 ~ 0.001, -->
-<!--     . > 0.999 ~ 0.999, -->
-<!--     TRUE ~ . -->
-<!--   ))) -->
+data = data %>% mutate(across(percept, ~case_when(
+    . < 0.001 ~ 0.001,
+    . > 0.999 ~ 0.999,
+    TRUE ~ .
+  )))
 
 
-<!-- data1 = list(nsubs = length(unique(data$id)), -->
-<!--             ntrials = nrow(data %>% filter(id %in% unique(id)[1])), -->
-<!--             percept = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept)%>% mutate(trial= NULL)), -->
-<!--             expectPain = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)), -->
-<!--             percept_bin = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept_bin)%>% mutate(trial= NULL)), -->
-<!--             stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)), -->
-<!--             cues = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)), -->
-<!--             u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL)) -->
-<!--             ) -->
+data1 = list(nsubs = length(unique(data$id)),
+            ntrials = nrow(data %>% filter(id %in% unique(id)[1])),
+            percept = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept)%>% mutate(trial= NULL)),
+            expectPain = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)),
+            percept_bin = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept_bin)%>% mutate(trial= NULL)),
+            stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)),
+            cues = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)),
+            u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
+            )
 
 
-<!-- mod = cmdstan_model(here::here("Stan","myKalmanfilter.stan")) -->
+mod = cmdstan_model(here::here("Stan","myKalmanfilter_v2.stan"))
 
-<!-- kalman_fit_sess1 <- mod$sample( -->
-<!--       data = data1, -->
-<!--       chains = 4,  -->
-<!--       parallel_chains = 4, -->
-<!--       refresh = 100, -->
-<!--       adapt_delta = 0.90, -->
-<!--       max_treedepth = 12 -->
-<!--     ) -->
-<!-- ``` -->
+kalman_fit_sess1 <- mod$sample(
+      data = data1,
+      chains = 4,
+      parallel_chains = 4,
+      refresh = 100,
+      adapt_delta = 0.90,
+      max_treedepth = 12
+    )
+
+
+
+
+diag_sigmaEta = get_diag(fit = kalman_fit_sess1,
+         parameter = "sigmaEta")
+
+diag_sigmaPsi = get_diag(fit = kalman_fit_sess1,
+         parameter = "sigmaPsi")
+
+diag_sigmaEpsilon = get_diag(fit = kalman_fit_sess1,
+         parameter = "sigmaEpsilon")
+
+
+diag_sigmabeta = get_diag(fit = kalman_fit_sess1,
+         parameter = "beta")
+
+diag_precision_percept = get_diag(fit = kalman_fit_sess1,
+         parameter = "precision_percept")
+```
+
+
+```{r fitting Kalman model to session 2}
+df= read.csv(here::here("data_TPL_AC.csv")) %>%
+  rename_all(tolower) %>%
+  filter(trial != 0) %>%
+  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
+  mutate_all(replace_na, 0)
+
+df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
+
+
+df = df %>% filter(session == 2)
+
+
+#fitting hierachically
+data = df %>% mutate(percept = percept/100)
+
+
+
+data = data %>% mutate(across(percept, ~case_when(
+    . < 0.001 ~ 0.001,
+    . > 0.999 ~ 0.999,
+    TRUE ~ .
+  )))
+
+
+data1 = list(nsubs = length(unique(data$id)),
+            ntrials = nrow(data %>% filter(id %in% unique(id)[1])),
+            percept = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept)%>% mutate(trial= NULL)),
+            expectPain = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)),
+            percept_bin = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept_bin)%>% mutate(trial= NULL)),
+            stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)),
+            cues = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)),
+            u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
+            )
+
+
+mod = cmdstan_model(here::here("Stan","myKalmanfilter_v2.stan"))
+
+kalman_fit_sess1 <- mod$sample(
+      data = data1,
+      chains = 4,
+      parallel_chains = 4,
+      refresh = 100,
+      adapt_delta = 0.90,
+      max_treedepth = 12
+    )
+```
 
 
 ```{r fitting WB model to session 1}
@@ -732,140 +779,120 @@ fit <- mod$sample(
 
 
 
-<!-- ```{r fitting to real data tester hierachical RW session 1} -->
+```{r fitting to real data tester hierachical RW session 1}
 
-<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>%  -->
-<!--   rename_all(tolower) %>%  -->
-<!--   filter(trial != 0) %>%  -->
-<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%  -->
-<!--   mutate_all(replace_na, 0) -->
+df= read.csv(here::here("data_TPL_AC.csv")) %>%
+  rename_all(tolower) %>%
+  filter(trial != 0) %>%
+  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
+  mutate_all(replace_na, 0)
 
-<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
-<!-- df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0)) -->
-
-
-
-<!-- #ratings -->
-<!-- df %>% filter(session == 2) %>% ggplot(aes(x = percept, fill = as.factor(stim))) + geom_histogram() -->
-<!-- #cue-contingency -->
-<!-- df %>% filter(session == 1, id == 1) %>% ggplot(aes(x = trial, y = u)) + geom_point()+theme_classic() -->
-
-
-<!-- df = df %>% filter(session == 1) -->
-
-
-<!-- source(here::here("stan_functions.R")) -->
-<!-- #fitting hierachically -->
-<!-- data = df %>% mutate(percept = percept/100) -->
+df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
+df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0))
 
 
 
-<!-- data = data %>% mutate(across(percept, ~case_when( -->
-<!--     . < 0.001 ~ 0.001, -->
-<!--     . > 0.999 ~ 0.999, -->
-<!--     TRUE ~ . -->
-<!--   ))) -->
+df = df %>% filter(session == 1)
 
 
-<!-- data1 = list(nsubs = length(unique(data$id)), -->
-<!--             ntrials = nrow(data %>% filter(id %in% unique(id)[1])), -->
-<!--             percept = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept)%>% mutate(trial= NULL)), -->
-<!--             expectPain = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)), -->
-<!--             percept_bin = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept_bin)%>% mutate(trial= NULL)), -->
-<!--             stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)), -->
-<!--             cues = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)), -->
-<!--             u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL)) -->
-<!--             ) -->
+#source(here::here("stan_functions.R"))
+#fitting hierachically
+data = df %>% mutate(percept = percept/100)
 
-<!-- data1 = list(nsubs = length(unique(data$id)), -->
-<!--             ntrials = nrow(data %>% filter(id %in% unique(id)[1])), -->
-<!--             pred = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)), -->
-<!--             u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL)) -->
-<!--             ) -->
+
+
+data = data %>% mutate(across(percept, ~case_when(
+    . < 0.001 ~ 0.001,
+    . > 0.999 ~ 0.999,
+    TRUE ~ .
+  )))
+
+
+data1 = list(nsubs = length(unique(data$id)),
+            ntrials = nrow(data %>% filter(id %in% unique(id)[1])),
+            pred = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)),
+            u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
+            )
 
 
 
 
 
-<!-- mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan")) -->
+mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan"))
 
-<!-- rw_fit_ses1 <- mod$sample( -->
-<!--       data = data1, -->
-<!--       chains = 4,  -->
-<!--       parallel_chains = 4, -->
-<!--       refresh = 100, -->
-<!--       adapt_delta = 0.90, -->
-<!--       max_treedepth = 12 -->
-<!--     ) -->
-<!-- ``` -->
-
+rw_fit_ses1 <- mod$sample(
+      data = data1,
+      chains = 4,
+      parallel_chains = 4,
+      refresh = 100,
+      adapt_delta = 0.90,
+      max_treedepth = 12
+    )
 
 
-<!-- ```{r fitting to real data tester hierachical RW seesion2} -->
+sum = rw_fit_ses1$summary(variables = c("alpha_1"))
 
-<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>%  -->
-<!--   rename_all(tolower) %>%  -->
-<!--   filter(trial != 0) %>%  -->
-<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%  -->
-<!--   mutate_all(replace_na, 0) -->
 
-<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
-<!-- df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0)) -->
+```
 
 
 
-<!-- #ratings -->
-<!-- df %>% filter(session == 2) %>% ggplot(aes(x = percept, fill = as.factor(stim))) + geom_histogram() -->
-<!-- #cue-contingency -->
-<!-- df %>% filter(session == 1, id == 1) %>% ggplot(aes(x = trial, y = u)) + geom_point()+theme_classic() -->
+```{r fitting to real data tester hierachical RW seesion2}
+
+df= read.csv(here::here("data_TPL_AC.csv")) %>%
+  rename_all(tolower) %>%
+  filter(trial != 0) %>%
+  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
+  mutate_all(replace_na, 0)
+
+df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
+df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0))
 
 
-<!-- df = df %>% filter(session == 2) -->
+df = df %>% filter(session == 2)
 
 
-<!-- source(here::here("stan_functions.R")) -->
-<!-- #fitting hierachically -->
-<!-- data = df %>% mutate(percept = percept/100) -->
+#source(here::here("stan_functions.R"))
+#fitting hierachically
+data = df %>% mutate(percept = percept/100)
 
 
 
-<!-- data = data %>% mutate(across(percept, ~case_when( -->
-<!--     . < 0.001 ~ 0.001, -->
-<!--     . > 0.999 ~ 0.999, -->
-<!--     TRUE ~ . -->
-<!--   ))) -->
+data = data %>% mutate(across(percept, ~case_when(
+    . < 0.001 ~ 0.001,
+    . > 0.999 ~ 0.999,
+    TRUE ~ .
+  )))
 
 
-<!-- data1 = list(nsubs = length(unique(data$id)), -->
-<!--             ntrials = nrow(data %>% filter(id %in% unique(id)[1])), -->
-<!--             percept = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept)%>% mutate(trial= NULL)), -->
-<!--             expectPain = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)), -->
-<!--             percept_bin = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept_bin)%>% mutate(trial= NULL)), -->
-<!--             stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)), -->
-<!--             cues = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)), -->
-<!--             u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL)) -->
-<!--             ) -->
 
-<!-- data1 = list(nsubs = length(unique(data$id)), -->
-<!--             ntrials = nrow(data %>% filter(id %in% unique(id)[1])), -->
-<!--             pred = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)), -->
-<!--             u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL)) -->
-<!--             ) -->
+
+data2 = list(nsubs = length(unique(data$id)),
+            ntrials = nrow(data %>% filter(id %in% unique(id)[1])),
+            pred = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)),
+            u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
+            )
 
 
 
 
 
-<!-- mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan")) -->
+mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan"))
 
-<!-- rw_fit_ses2 <- mod$sample( -->
-<!--       data = data1, -->
-<!--       chains = 4,  -->
-<!--       parallel_chains = 4, -->
-<!--       refresh = 100, -->
-<!--       adapt_delta = 0.90, -->
-<!--       max_treedepth = 12 -->
-<!--     ) -->
-<!-- ``` -->
+rw_fit_ses2 <- mod$sample(
+      data = data2,
+      chains = 4,
+      parallel_chains = 4,
+      refresh = 100,
+      adapt_delta = 0.90,
+      max_treedepth = 12
+    )
+
+
+sums2 = rw_fit_ses2$summary(variables = c("alpha_1"))
+
+
+
+```
 
 
