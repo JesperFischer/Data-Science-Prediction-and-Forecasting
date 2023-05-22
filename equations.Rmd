@@ -2,7 +2,9 @@
 title: "equations"
 author: "Jesper Fischer Ehmsen"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -59,7 +61,7 @@ To arrive at the update equations for the kalman filter we start off by assuming
 $$
 \begin{equation}
 \tag{5}
-S_t \sim \mathcal{N}{(\mu_{p_t}, \sigma_s^2)}
+S_t \sim \mathcal{N}{(\psi{_t}, \sigma_s^2)}
 \end{equation}
 $$
 
@@ -85,7 +87,7 @@ Lastly this prior expectation, i.e. the expectation of the last trial is given b
 $$
 \begin{equation}
 \tag{8}
-E_t | S_{{t-1}} \sim \mathcal{N}{(E_{t-1}, \sigma_E^2)}
+E_t | S_{{t-1}} \sim \mathcal{N}{(\mu_{E_{t-1}}, \sigma_{E_t}^2)}
 \end{equation}
 $$
 Now combining (8) and (6) we get a prior for the precept at a given trial, which is before getting the stimulus but after getting the cue
@@ -94,7 +96,7 @@ Now combining (8) and (6) we get a prior for the precept at a given trial, which
 $$
 \begin{equation}
 \tag{9}
-\psi_t | S_{{t-1}} \sim \mathcal{N}{(E_{t-1}, \sigma_E^2+ \sigma_{\psi}^2))}
+\psi_t | S_{{t-1}} \sim \mathcal{N}{(\mu_{E_{t-1}}, \sigma_{E_t}^2+ \sigma_{\psi}^2))}
 \end{equation}
 $$
 
@@ -103,16 +105,16 @@ After the stimulus is the observed (the likelihood) (5) we can combine this with
 
 $$
 \begin{equation}
-\tag{9}
-\psi_t | S_{{t-1}} \sim \mathcal{N}{(\frac{\sigma_{s}^2*E_t+(\sigma_{\psi}^2+\sigma_E^2)*S_t}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_E^2}, \frac{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_E^2}{\sigma_{s}^2*(\sigma_{\psi}^2+\sigma_E^2)}})
+\tag{10}
+\psi_t | S_{{t}} \sim \mathcal{N}{(\frac{\sigma_{s}^2*\mu_{E_{t-1}}+(\sigma_{\psi}^2+\sigma_{E_t}^2)*S_t}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}, \frac{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2*(\sigma_{\psi}^2+\sigma_{E_t}^2)}})
 \end{equation}
 $$
 The mean rating of the agent on trial t is therefore given by the mean, which can also be writting as:
 
 $$
 \begin{equation}
-\tag{9}
-\mu_{\psi_t} = \frac{\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_E^2}*E_t+\frac{(\sigma_{\psi}^2+\sigma_E^2)}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_E^2}*S_t
+\tag{11}
+\mu_{\psi_t} = \frac{\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}*\mu_{E_{t-1}}+\frac{\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}*S_t
 \end{equation}
 $$
 
@@ -123,61 +125,43 @@ After the posterior for the percept is calculated the belief is then updated whi
 
 $$
 \begin{equation}
-\tag{7}
-E_{t+1}|S_t \sim \mathcal{N}{(\frac{(\sigma_{s}^2+\sigma_{\psi}^2)*E_{t-1}+\sigma_E^2*S_t}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_E^2}, \frac{(\sigma_{s}^2+\sigma_{\psi}^2)*\sigma_E^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_E^2}+\sigma_\eta^2})
+\tag{12}
+E_{t}|S_t \sim \mathcal{N}{(\frac{(\sigma_{s}^2+\sigma_{\psi}^2)*\mu_{E_{t-1}}+\sigma_{E_t}^2*S_t}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}, \frac{(\sigma_{s}^2+\sigma_{\psi}^2)*\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}+\sigma_\eta^2})
 \end{equation}
 $$
 
-
-
-
-
-
-
-
-
-
-
-
-see equation (1)
-
-
-
+It can be shown that these update equations for the expectation and the mean percept are a generalization of the above mentioned RW model if we define two trial by trial parameters $\gamma_{t}$ and $\alpha_{t}$
 
 
 $$
 \begin{equation}
-\tag{*}
-beinf(y;p_0,p_1,\mu,\phi) = \begin{cases}
-      p_0 & x = 0 \\
-      f(y;\mu,\phi) & x \in (0,1) \\
-      p_1 & x = 1 
-   \end{cases}
+\tag{13}
+\gamma_{t} = \frac{\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}
+\end{equation}
+$$
+$$
+\begin{equation}
+\tag{14}
+\alpha_{t} = \frac{\sigma_{E_t}^2}{\sigma_{\psi}^2+\sigma_{E_t}^2}
 \end{equation}
 $$
 
-where the probability density function of the beta distribution $f(y;\mu,\phi)$ is given by
+one can arrive at the following update equations for the percept and the expectation
+
 
 $$
-f(y;\mu,\phi) = \frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)}y^{\alpha-1}(1-y)^{\beta-1},y\in (0,1)
+\begin{equation}
+\tag{15}
+\psi_{t} = (1-\gamma_{t})*S_{t}+\gamma_{t}*E_{t}
+\end{equation}
 $$
 
-In the current study using the GAMLSS packages the parameters are reparameterized as follows:
-
-$$ 
-\mu = \frac{\alpha}{\alpha+\beta}
-$$ 
-
 $$
-\sigma = \frac{1}{\alpha+\beta+1}
-$$ 
+\begin{equation}
+\tag{16}
+E_{t} = \alpha_{t}*\psi_{t}+(1-\alpha_{t})*E_{t}
+\end{equation}
+$$
+For the derivation of equation 15 and 16 readers are refereed to the supplementary material.
 
-$$
-\tau = \frac{p_0}{p_2}
-$$ 
-
-$$
-\nu = \frac{p_1}{p_2}
-$$
-where $p_2 = 1-p_0-p_1$
 

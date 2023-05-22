@@ -124,8 +124,8 @@ KALMAN_v2 = function(){
   sigmaEta = seq(0.01,0.1,length.out = 5)
   sigmaPsi = seq(0.01,2,length.out = 5)
   sigmaEpsilon = seq(0.1,1,length.out = 5)
-  beta = 200
-  precision_percept = 200
+  beta = 100
+  precision_percept = 100
   
   
   parameters = expand.grid(sigmaEta = sigmaEta,sigmaPsi =  sigmaPsi, sigmaEpsilon = sigmaEpsilon, beta = beta, precision_percept = precision_percept)

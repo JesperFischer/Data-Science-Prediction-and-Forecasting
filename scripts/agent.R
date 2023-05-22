@@ -308,7 +308,7 @@ our_kalman_agent22 = function(parameters,dd){
     
     exp_mu[t] = ifelse(exp_mu[t] > 0.999, 0.999, ifelse(exp_mu[t] < 0.001, 0.001, exp_mu[t]))
     
-    pred[t] = rbinom(1,1,(exp_mu[t]^beta[t])/((exp_mu[t]^beta[t])+(1-exp_mu[t])^(beta[t])))
+    pred[t] = rbinom(1,1,(exp_mu[t]^beta)/((exp_mu[t]^beta)+(1-exp_mu[t])^(beta)))
     
     
     perceptmu[t] =  (sigmaEpsilon * exp_mu[t] + (sigmaPsi + exp_var[t]) * stim[t] ) / 
@@ -323,7 +323,7 @@ our_kalman_agent22 = function(parameters,dd){
     percept[t] = extraDistr::rprop(1,precision_percept,perceptmu[t])
     
     
-    percept_bin[t] = rbinom(1,1,(perceptmu[t]^beta[t])/((perceptmu[t]^beta[t])+(1-perceptmu[t])^(beta[t])))
+    percept_bin[t] = rbinom(1,1,(perceptmu[t]^beta)/((perceptmu[t]^beta)+(1-perceptmu[t])^(beta)))
     
     association[t+1] <- ((sigmaEpsilon + sigmaPsi) * association[t] + (exp_var[t] * u[t])) / 
       (sigmaEpsilon + sigmaPsi + exp_var[t])

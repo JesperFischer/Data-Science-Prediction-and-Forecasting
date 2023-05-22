@@ -11,7 +11,7 @@
 
 <meta name="author" content="Jesper Fischer Ehmsen" />
 
-<meta name="date" content="2023-05-21" />
+<meta name="date" content="2023-05-22" />
 
 <title>equations</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">equations</h1>
 <h4 class="author">Jesper Fischer Ehmsen</h4>
-<h4 class="date">2023-05-21</h4>
+<h4 class="date">2023-05-22</h4>
 
 </div>
 
@@ -434,7 +434,7 @@ noise:</p>
 <p><span class="math display">\[
 \begin{equation}
 \tag{5}
-S_t \sim \mathcal{N}{(\mu_{p_t}, \sigma_s^2)}
+S_t \sim \mathcal{N}{(\psi{_t}, \sigma_s^2)}
 \end{equation}
 \]</span></p>
 <p>Next we assume that the mean of this normal distribution is sampled
@@ -442,43 +442,96 @@ from another normal distribution with the expectation at trial t as its
 mean</p>
 <p><span class="math display">\[
 \begin{equation}
-\tag{5}
-\mu_p \sim \mathcal{N}{(\mu_E, \sigma_E^2)}
+\tag{6}
+\psi_t \sim \mathcal{N}{(E_t, \sigma_{\psi}^2)}
 \end{equation}
-\]</span></p>
-<p>Here the belief is updated based on the following equation where m is
-the belief at the current trial.</p>
-<p>see equation (1)</p>
+\]</span> Where this mean is updated based on the stimulus given the cue
+on previous trials</p>
 <p><span class="math display">\[
 \begin{equation}
-\tag{*}
-beinf(y;p_0,p_1,\mu,\phi) = \begin{cases}
-      p_0 &amp; x = 0 \\
-      f(y;\mu,\phi) &amp; x \in (0,1) \\
-      p_1 &amp; x = 1
-   \end{cases}
+\tag{7}
+E_t \sim \mathcal{N}{(E_{t-1}, \sigma_\eta^2)}
+\end{equation}
+\]</span> Lastly this prior expectation, i.e. the expectation of the
+last trial is given by all the previous inputs which the agent keeps
+track off.</p>
+<p><span class="math display">\[
+\begin{equation}
+\tag{8}
+E_t | S_{{t-1}} \sim \mathcal{N}{(\mu_{E_{t-1}}, \sigma_{E_t}^2)}
+\end{equation}
+\]</span> Now combining (8) and (6) we get a prior for the precept at a
+given trial, which is before getting the stimulus but after getting the
+cue</p>
+<p><span class="math display">\[
+\begin{equation}
+\tag{9}
+\psi_t | S_{{t-1}} \sim \mathcal{N}{(\mu_{E_{t-1}}, \sigma_{E_t}^2+
+\sigma_{\psi}^2))}
 \end{equation}
 \]</span></p>
-<p>where the probability density function of the beta distribution <span class="math inline">\(f(y;\mu,\phi)\)</span> is given by</p>
+<p>After the stimulus is the observed (the likelihood) (5) we can
+combine this with the prior (9) using bayes rule to get a posterior for
+percept.</p>
 <p><span class="math display">\[
-f(y;\mu,\phi) =
-\frac{\Gamma(\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)}y^{\alpha-1}(1-y)^{\beta-1},y\in
-(0,1)
+\begin{equation}
+\tag{10}
+\psi_t | S_{{t}} \sim
+\mathcal{N}{(\frac{\sigma_{s}^2*\mu_{E_{t-1}}+(\sigma_{\psi}^2+\sigma_{E_t}^2)*S_t}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2},
+\frac{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2*(\sigma_{\psi}^2+\sigma_{E_t}^2)}})
+\end{equation}
+\]</span> The mean rating of the agent on trial t is therefore given by
+the mean, which can also be writting as:</p>
+<p><span class="math display">\[
+\begin{equation}
+\tag{11}
+\mu_{\psi_t} =
+\frac{\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}*\mu_{E_{t-1}}+\frac{\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}*S_t
+\end{equation}
 \]</span></p>
-<p>In the current study using the GAMLSS packages the parameters are
-reparameterized as follows:</p>
+<p>where it becomes evident that the mean rating at trial t is a
+weighting between the expectation and the stimulus on the current
+trial.</p>
+<p>After the posterior for the percept is calculated the belief is then
+updated which can then be used as priors for the next trial.</p>
 <p><span class="math display">\[
-\mu = \frac{\alpha}{\alpha+\beta}
+\begin{equation}
+\tag{12}
+E_{t}|S_t \sim
+\mathcal{N}{(\frac{(\sigma_{s}^2+\sigma_{\psi}^2)*\mu_{E_{t-1}}+\sigma_{E_t}^2*S_t}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2},
+\frac{(\sigma_{s}^2+\sigma_{\psi}^2)*\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}+\sigma_\eta^2})
+\end{equation}
+\]</span></p>
+<p>It can be shown that these update equations for the expectation and
+the mean percept are a generalization of the above mentioned RW model if
+we define two trial by trial parameters <span class="math inline">\(\gamma_{t}\)</span> and <span class="math inline">\(\alpha_{t}\)</span></p>
+<p><span class="math display">\[
+\begin{equation}
+\tag{13}
+\gamma_{t} =
+\frac{\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}
+\end{equation}
+\]</span> <span class="math display">\[
+\begin{equation}
+\tag{14}
+\alpha_{t} = \frac{\sigma_{E_t}^2}{\sigma_{\psi}^2+\sigma_{E_t}^2}
+\end{equation}
+\]</span></p>
+<p>one can arrive at the following update equations for the percept and
+the expectation</p>
+<p><span class="math display">\[
+\begin{equation}
+\tag{15}
+\psi_{t} = (1-\gamma_{t})*S_{t}+\gamma_{t}*E_{t}
+\end{equation}
 \]</span></p>
 <p><span class="math display">\[
-\sigma = \frac{1}{\alpha+\beta+1}
-\]</span></p>
-<p><span class="math display">\[
-\tau = \frac{p_0}{p_2}
-\]</span></p>
-<p><span class="math display">\[
-\nu = \frac{p_1}{p_2}
-\]</span> where <span class="math inline">\(p_2 = 1-p_0-p_1\)</span></p>
+\begin{equation}
+\tag{16}
+E_{t} = \alpha_{t}*\psi_{t}+(1-\alpha_{t})*E_{t}
+\end{equation}
+\]</span> For the derivation of equation 15 and 16 readers are refereed
+to the supplementary material.</p>
 </div>
 </div>
 </div>
