@@ -343,10 +343,6 @@ our_kalman_agent22 = function(parameters,dd){
   
 }
 
-
-
-
-
 our_kalman_agent_v2 = function(sigmaEta, sigmaEpsilon, sigmaPsi){
   
   dd = get_experiment()

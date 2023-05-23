@@ -121,9 +121,9 @@ KALMAN_v2 = function(dd){
   #kalman filter:
   
   
-  sigmaEta = seq(0.01,0.1,length.out = 3)
-  sigmaPsi = seq(0.01,2,length.out = 3)
-  sigmaEpsilon = seq(0.1,1,length.out = 3)
+  sigmaEta = seq(0.01,1,length.out = 3)
+  sigmaPsi = seq(0.01,5,length.out = 3)
+  sigmaEpsilon = seq(0.1,5,length.out = 3)
   beta = 50
   precision_percept = 155
   

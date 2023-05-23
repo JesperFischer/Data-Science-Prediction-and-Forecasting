@@ -131,8 +131,8 @@ model {
   target += lognormal_lpdf(sd_sigmaPsi | 0 , 1);
   target += lognormal_lpdf(sd_sigmaEpsilon | 0 , 1);
   
-  target += exponential_lpdf(sd_precision_percept | 1);
-  target += exponential_lpdf(sd_beta | 1);
+  target += exponential_lpdf(sd_precision_percept | 0.1);
+  target += exponential_lpdf(sd_beta | 0.1);
   
 }
 
@@ -192,8 +192,8 @@ generated quantities{
   prior_sd_sigmaEpsilon = lognormal_rng(0 , 1);
   
   
-  prior_sd_precision_percept = exponential_rng(1);
-  prior_sd_beta = exponential_rng(1);
+  prior_sd_precision_percept = exponential_rng(0.1);
+  prior_sd_beta = exponential_rng(0.1);
   
   
   

@@ -170,7 +170,7 @@ parameter_recovery_kalman = function(parameters){
                u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
   )
   
-  mod = cmdstan_model(here::here("Stan","no generated quantities","myKalmanfilter_nogen.stan"))
+  mod = cmdstan_model(here::here("Stan","no generated quantities","myKalmanfilter_v2_nogen_nocent.stan"))
   
   
   fitter = function(){
@@ -182,12 +182,13 @@ parameter_recovery_kalman = function(parameters){
       adapt_delta = 0.90,
       max_treedepth = 12
     )
-    return(fit)
+    
+        return(fit)
   }
   
   
   fit <- tryCatch({
-    fit = withTimeout(fitter(), timeout = 1500)
+    fit = withTimeout(fitter(), timeout = 1500, cpu = 1500)
   }, error = function(e) {
     print("An error occurred!")
     return(NA)
