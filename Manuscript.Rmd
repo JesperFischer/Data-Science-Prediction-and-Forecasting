@@ -17,7 +17,7 @@ q = lapply(here("scripts", scripts), source)
 
 
 
-```{r parameters visualization}
+```{r parameters visualization, fig.height=10, fig.width=10}
 dd = get_experiment()
 
 rwplot = RW(dd)
@@ -171,35 +171,18 @@ kalman_pp = furrr::future_map(data_list, ~parameter_recovery_kalman(.x), .progre
 
 ```{r}
 #plot parameterrecovery
-hier_pp <- do.call(rbind, lapply(rw_pp, "[[", 1))
-hier_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
-  ggplot(aes(x = mean, y = reals.reals))+
-  geom_point(aes(col = as.factor(divergences)))+
-  facet_wrap(~variable, scales = "free")+
-  theme_classic()+
-  geom_abline(slope = 1, intercept = 0)+
-  scale_color_manual("divergence?",values = c("black","red"))
+plot_parameterrecovery(rw_pp, div = F, subs = 5)
 
-
-
-sub_pp <- do.call(rbind, lapply(rw_pp, "[[", 2))
-sub_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
-  ggplot(aes(x = mean, y = reals.reals))+
-  geom_point(aes(col = as.factor(divergences)))+
-  facet_wrap(~variable, scales = "free")+
-  theme_classic()+
-  geom_abline(slope = 1, intercept = 0)+
-  scale_color_manual("divergence?",values = c("black","red"))
-
+plot_parameterrecovery(wb_pp, div = F, subs = 5)
 
 ```
 
 
 ```{r model recovery}
 ########################################### Resorla wagner parameters:
-mu_alpha = seq(0.1,0.3,length.out = 10)
+mu_alpha = rep(0.3,100)
 kappa_alpha = 50
-mu_w1 = seq(0.1,0.3,length.out = 10)
+mu_w1 = rep(0.3,100)
 kappa_w1 = 50
 sd_precision_percept = 0.5
 sd_beta = 0.5
@@ -300,6 +283,35 @@ elpld_loo <- map_dfr(kalman_loo, ~ .x[[1]])
 
 full_loo <- map_dfr(kalman_loo, ~ .x[[2]])
 
+```
+
+
+
+```{r model recovery table:}
+
+get_value = function(loo){
+  get_from_means <- do.call(rbind, lapply(loo, "[[", 1))
+
+  get_from_means$id = as.factor(get_from_means$id)
+# Group by ID and find the model with the minimum value
+  min_values <- get_from_means %>%
+  group_by(id) %>%
+  filter(means == min(means))
+
+# Count the occurrences of each model with the minimum value per run
+  model_counts <- min_values %>%
+    group_by(names) %>%
+    summarize(Count = n())
+
+
+  get_from_loo <- do.call(rbind, lapply(loo, "[[", 2))
+
+  get_from_loo = get_from_loo %>% filter(elpd_diff == 0) %>% mutate(model = row.names(.)) %>% mutate(realmodel = sub("^[0-9]+\\.(.*)", "\\1", model)) %>% group_by(realmodel) %>% summarize(Count = n())
+
+  return(list(fromloo = get_from_loo, frommean = model_counts))
+}
+
+get_value(rw_loo)
 ```
 
 
@@ -648,249 +660,307 @@ w7b_fit_sess2 <- mod$sample(
 
 
 
-```{r hierachical session correlation (RW)}
 
 
-df= read.csv(here::here("data_TPL_AC.csv")) %>%
-  rename_all(tolower) %>%
-  filter(trial != 0) %>%
-  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
-  mutate_all(replace_na, 0) %>% mutate(id = as.factor(id), trial = as.factor(trial), session = as.factor(session))
 
-df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
-df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0))
 
 
 
-#ratings
-df %>% filter(session == 2) %>% ggplot(aes(x = percept, fill = as.factor(stim))) + geom_histogram()
-#cue-contingency
-df %>% filter(session == 1, id == 1) %>% ggplot(aes(x = trial, y = u)) + geom_point()+theme_classic()
 
 
-#fitting hierachically
-data = df %>% mutate(percept = percept/100)
 
 
+<!-- ```{r hierachical session correlation (RW)} -->
 
-data = data %>% mutate(across(percept, ~case_when(
-    . < 0.001 ~ 0.001,
-    . > 0.999 ~ 0.999,
-    TRUE ~ .
-  )))
 
+<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>% -->
+<!--   rename_all(tolower) %>% -->
+<!--   filter(trial != 0) %>% -->
+<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>% -->
+<!--   mutate_all(replace_na, 0) %>% mutate(id = as.factor(id), trial = as.factor(trial), session = as.factor(session)) -->
 
-data1 = list(nsubs = length(unique(data$id)),
-            ntrials = nrow(data %>% filter(session == 1) %>% filter(id %in% unique(id)[1])),
-            sesions = length(unique(data$session)),
-            percept = get_3darray(data,variable = "percept"),
-            expectPain = get_3darray(data,variable = "pred"),
-            percept_bin = get_3darray(data,variable = "percept_bin"),
-            stim = get_3darray(data,variable = "stim"),
-            cues = get_3darray(data,variable = "cue"),
-            u = get_3darray(data,variable = "u")
-            )
+<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
+<!-- df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0)) -->
 
 
-mod = cmdstan_model(here::here("Stan","fitting both sessions","myRW_correlation.stan"))
 
+<!-- #ratings -->
+<!-- df %>% filter(session == 2) %>% ggplot(aes(x = percept, fill = as.factor(stim))) + geom_histogram() -->
+<!-- #cue-contingency -->
+<!-- df %>% filter(session == 1, id == 1) %>% ggplot(aes(x = trial, y = u)) + geom_point()+theme_classic() -->
 
-fit <- mod$sample(
-  data = data1,
-  chains = 4,
-  parallel_chains = 4,
-  refresh = 100,
-  adapt_delta = 0.90,
-  max_treedepth = 12
-)
 
+<!-- #fitting hierachically -->
+<!-- data = df %>% mutate(percept = percept/100) -->
 
 
-sum = fit$summary(variables = c("mu_alpha","mu_w1","sd_beta","sd_precision_percept", "kappa_alpha","kappa_w1","alpha","w1","beta","precision_percept"))
 
-variabless = c("mu_alpha[1]","mu_w1[1]","sd_beta[1]","sd_precision_percept[1]","mu_alpha[2]","mu_w1[2]","sd_beta[2]","sd_precision_percept[2]")
+<!-- data = data %>% mutate(across(percept, ~case_when( -->
+<!--     . < 0.001 ~ 0.001, -->
+<!--     . > 0.999 ~ 0.999, -->
+<!--     TRUE ~ . -->
+<!--   ))) -->
 
-pairs = mcmc_pairs(fit$draws(variables = variabless), np = nuts_params(fit), pars = variabless,
-                   off_diag_args = list(size = 0.75))
-```
 
+<!-- data1 = list(nsubs = length(unique(data$id)), -->
+<!--             ntrials = nrow(data %>% filter(session == 1) %>% filter(id %in% unique(id)[1])), -->
+<!--             sesions = length(unique(data$session)), -->
+<!--             percept = get_3darray(data,variable = "percept"), -->
+<!--             expectPain = get_3darray(data,variable = "pred"), -->
+<!--             percept_bin = get_3darray(data,variable = "percept_bin"), -->
+<!--             stim = get_3darray(data,variable = "stim"), -->
+<!--             cues = get_3darray(data,variable = "cue"), -->
+<!--             u = get_3darray(data,variable = "u") -->
+<!--             ) -->
 
 
+<!-- mod = cmdstan_model(here::here("Stan","fitting both sessions","myRW_correlation.stan")) -->
 
-```{r hierachical session correlation (WB)}
 
+<!-- fit <- mod$sample( -->
+<!--   data = data1, -->
+<!--   chains = 4, -->
+<!--   parallel_chains = 4, -->
+<!--   refresh = 100, -->
+<!--   adapt_delta = 0.90, -->
+<!--   max_treedepth = 12 -->
+<!-- ) -->
 
-df= read.csv(here::here("data_TPL_AC.csv")) %>%
-  rename_all(tolower) %>%
-  filter(trial != 0) %>%
-  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
-  mutate_all(replace_na, 0) %>% mutate(id = as.factor(id), trial = as.factor(trial), session = as.factor(session))
 
-df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
-df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0))
 
+<!-- sum = fit$summary(variables = c("mu_alpha","mu_w1","sd_beta","sd_precision_percept", "kappa_alpha","kappa_w1","alpha","w1","beta","precision_percept")) -->
 
+<!-- variabless = c("mu_alpha[1]","mu_w1[1]","sd_beta[1]","sd_precision_percept[1]","mu_alpha[2]","mu_w1[2]","sd_beta[2]","sd_precision_percept[2]") -->
 
+<!-- pairs = mcmc_pairs(fit$draws(variables = variabless), np = nuts_params(fit), pars = variabless, -->
+<!--                    off_diag_args = list(size = 0.75)) -->
+<!-- ``` -->
 
-#fitting hierachically
-data = df %>% mutate(percept = percept/100)
 
 
-data = data %>% mutate(across(c(percept,stim), ~case_when(
-    . < 0.001 ~ 0.001,
-    . > 0.999 ~ 0.999,
-    TRUE ~ .
-  )))
 
+<!-- ```{r hierachical session correlation (WB)} -->
 
-data1 = list(nsubs = length(unique(data$id)),
-            ntrials = nrow(data %>% filter(session == 1) %>% filter(id %in% unique(id)[1])),
-            sesions = length(unique(data$session)),
-            percept = get_3darray(data,variable = "percept"),
-            pred = get_3darray(data,variable = "pred"),
-            percept_bin = get_3darray(data,variable = "percept_bin"),
-            stim = get_3darray(data,variable = "stim"),
-            cue = get_3darray(data,variable = "cue")
-            )
 
+<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>% -->
+<!--   rename_all(tolower) %>% -->
+<!--   filter(trial != 0) %>% -->
+<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>% -->
+<!--   mutate_all(replace_na, 0) %>% mutate(id = as.factor(id), trial = as.factor(trial), session = as.factor(session)) -->
 
+<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
+<!-- df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0)) -->
 
 
 
-mod = cmdstan_model(here::here("Stan","fitting both sessions","hier_weighted_bayes_correlation.stan"))
 
+<!-- #fitting hierachically -->
+<!-- data = df %>% mutate(percept = percept/100) -->
 
-fit <- mod$sample(
-  data = data1,
-  chains = 4,
-  parallel_chains = 4,
-  refresh = 100,
-  adapt_delta = 0.90,
-  max_treedepth = 12
-)
 
+<!-- data = data %>% mutate(across(c(percept,stim), ~case_when( -->
+<!--     . < 0.001 ~ 0.001, -->
+<!--     . > 0.999 ~ 0.999, -->
+<!--     TRUE ~ . -->
+<!--   ))) -->
 
 
-```
+<!-- data1 = list(nsubs = length(unique(data$id)), -->
+<!--             ntrials = nrow(data %>% filter(session == 1) %>% filter(id %in% unique(id)[1])), -->
+<!--             sesions = length(unique(data$session)), -->
+<!--             percept = get_3darray(data,variable = "percept"), -->
+<!--             pred = get_3darray(data,variable = "pred"), -->
+<!--             percept_bin = get_3darray(data,variable = "percept_bin"), -->
+<!--             stim = get_3darray(data,variable = "stim"), -->
+<!--             cue = get_3darray(data,variable = "cue") -->
+<!--             ) -->
 
 
 
 
 
-```{r fitting to real data tester hierachical RW session 1}
+<!-- mod = cmdstan_model(here::here("Stan","fitting both sessions","hier_weighted_bayes_correlation.stan")) -->
 
-df= read.csv(here::here("data_TPL_AC.csv")) %>%
-  rename_all(tolower) %>%
-  filter(trial != 0) %>%
-  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
-  mutate_all(replace_na, 0)
 
-df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
-df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0))
+<!-- fit <- mod$sample( -->
+<!--   data = data1, -->
+<!--   chains = 4, -->
+<!--   parallel_chains = 4, -->
+<!--   refresh = 100, -->
+<!--   adapt_delta = 0.90, -->
+<!--   max_treedepth = 12 -->
+<!-- ) -->
 
 
 
-df = df %>% filter(session == 1)
+<!-- ``` -->
 
 
-#source(here::here("stan_functions.R"))
-#fitting hierachically
-data = df %>% mutate(percept = percept/100)
 
 
 
-data = data %>% mutate(across(percept, ~case_when(
-    . < 0.001 ~ 0.001,
-    . > 0.999 ~ 0.999,
-    TRUE ~ .
-  )))
+<!-- ```{r fitting to both sessions to hierachiacal RW} -->
 
+<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>% -->
+<!--   rename_all(tolower) %>% -->
+<!--   filter(trial != 0) %>% -->
+<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>% -->
+<!--   mutate_all(replace_na, 0) -->
 
-data1 = list(nsubs = length(unique(data$id)),
-            ntrials = nrow(data %>% filter(id %in% unique(id)[1])),
-            pred = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)),
-            u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
-            )
+<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
+<!-- df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0)) -->
 
 
 
+<!-- #source(here::here("stan_functions.R")) -->
+<!-- #fitting hierachically -->
+<!-- data = df %>% mutate(percept = percept/100) -->
 
 
-mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan"))
 
-rw_fit_ses1 <- mod$sample(
-      data = data1,
-      chains = 4,
-      parallel_chains = 4,
-      refresh = 100,
-      adapt_delta = 0.90,
-      max_treedepth = 12
-    )
+<!-- data = data %>% mutate(across(percept, ~case_when( -->
+<!--     . < 0.001 ~ 0.001, -->
+<!--     . > 0.999 ~ 0.999, -->
+<!--     TRUE ~ . -->
+<!--   ))) -->
 
 
-sum = rw_fit_ses1$summary(variables = c("alpha_1"))
+<!-- data1 = list(nsubs = length(unique(data$id)), -->
+<!--             ntrials = nrow(data %>% filter(session == 1) %>% filter(id %in% unique(id)[1])), -->
+<!--             sessions = 2, -->
+<!--             pred = get_3darray(data,variable = "pred"), -->
+<!--             u = get_3darray(data,variable = "u") -->
+<!--             ) -->
 
 
-```
 
 
 
-```{r fitting to real data tester hierachical RW seesion2}
+<!-- mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan")) -->
 
-df= read.csv(here::here("data_TPL_AC.csv")) %>%
-  rename_all(tolower) %>%
-  filter(trial != 0) %>%
-  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
-  mutate_all(replace_na, 0)
+<!-- rw_fit_ses1 <- mod$sample( -->
+<!--       data = data1, -->
+<!--       chains = 4, -->
+<!--       parallel_chains = 4, -->
+<!--       refresh = 100, -->
+<!--       adapt_delta = 0.90, -->
+<!--       max_treedepth = 12 -->
+<!--     ) -->
 
-df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
-df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0))
 
+<!-- sum = rw_fit_ses1$summary(variables = c("alpha", "mu_alpha","sd_alpha","mu_mu_alpha","sd_sd_alpha","mu_sd_alpha","sd_mu_alpha")) -->
+<!-- ``` -->
 
-df = df %>% filter(session == 2)
 
+<!-- ```{r, fitting to real data tester hierachical RW sessions1} -->
+<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>% -->
+<!--   rename_all(tolower) %>% -->
+<!--   filter(trial != 0) %>% -->
+<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>% -->
+<!--   mutate_all(replace_na, 0) -->
 
-#source(here::here("stan_functions.R"))
-#fitting hierachically
-data = df %>% mutate(percept = percept/100)
+<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
+<!-- df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0)) -->
 
 
+<!-- df = df %>% filter(session == 1) -->
 
-data = data %>% mutate(across(percept, ~case_when(
-    . < 0.001 ~ 0.001,
-    . > 0.999 ~ 0.999,
-    TRUE ~ .
-  )))
 
+<!-- #source(here::here("stan_functions.R")) -->
+<!-- #fitting hierachically -->
+<!-- data = df %>% mutate(percept = percept/100) -->
 
 
 
-data2 = list(nsubs = length(unique(data$id)),
-            ntrials = nrow(data %>% filter(id %in% unique(id)[1])),
-            pred = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)),
-            u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
-            )
+<!-- data = data %>% mutate(across(percept, ~case_when( -->
+<!--     . < 0.001 ~ 0.001, -->
+<!--     . > 0.999 ~ 0.999, -->
+<!--     TRUE ~ . -->
+<!--   ))) -->
 
 
 
 
+<!-- data2 = list(nsubs = length(unique(data$id)), -->
+<!--             ntrials = nrow(data %>% filter(id %in% unique(id)[1])), -->
+<!--             pred = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)), -->
+<!--             u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL)) -->
+<!--             ) -->
 
-mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan"))
 
-rw_fit_ses2 <- mod$sample(
-      data = data2,
-      chains = 4,
-      parallel_chains = 4,
-      refresh = 100,
-      adapt_delta = 0.90,
-      max_treedepth = 12
-    )
 
 
-sums2 = rw_fit_ses2$summary(variables = c("alpha_1"))
 
+<!-- mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan")) -->
 
+<!-- rw_fit_ses1 <- mod$sample( -->
+<!--       data = data2, -->
+<!--       chains = 4, -->
+<!--       parallel_chains = 4, -->
+<!--       refresh = 100, -->
+<!--       adapt_delta = 0.90, -->
+<!--       max_treedepth = 12 -->
+<!--     ) -->
 
-```
+
+
+<!-- ``` -->
+
+
+
+<!-- ```{r fitting to real data tester hierachical RW seesion2} -->
+
+<!-- df= read.csv(here::here("data_TPL_AC.csv")) %>% -->
+<!--   rename_all(tolower) %>% -->
+<!--   filter(trial != 0) %>% -->
+<!--   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>% -->
+<!--   mutate_all(replace_na, 0) -->
+
+<!-- df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0)) -->
+<!-- df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0)) -->
+
+
+<!-- df = df %>% filter(session == 2) -->
+
+
+<!-- #source(here::here("stan_functions.R")) -->
+<!-- #fitting hierachically -->
+<!-- data = df %>% mutate(percept = percept/100) -->
+
+
+
+<!-- data = data %>% mutate(across(percept, ~case_when( -->
+<!--     . < 0.001 ~ 0.001, -->
+<!--     . > 0.999 ~ 0.999, -->
+<!--     TRUE ~ . -->
+<!--   ))) -->
+
+
+
+
+<!-- data2 = list(nsubs = length(unique(data$id)), -->
+<!--             ntrials = nrow(data %>% filter(id %in% unique(id)[1])), -->
+<!--             pred = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)), -->
+<!--             u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL)) -->
+<!--             ) -->
+
+
+
+
+
+<!-- mod = cmdstan_model(here::here("Stan","rw_vs_rw_hier.stan")) -->
+
+<!-- rw_fit_ses2 <- mod$sample( -->
+<!--       data = data2, -->
+<!--       chains = 4, -->
+<!--       parallel_chains = 4, -->
+<!--       refresh = 100, -->
+<!--       adapt_delta = 0.90, -->
+<!--       max_treedepth = 12 -->
+<!--     ) -->
+
+
+
+<!-- ``` -->
 
 

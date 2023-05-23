@@ -239,3 +239,68 @@ WB = function(dd){
   
   
 }
+
+
+plot_parameterrecovery = function(pp, div, subs){
+  
+  if(div){
+  hier_pp <- do.call(rbind, lapply(pp, "[[", 1))
+  sub_pp <- do.call(rbind, lapply(pp, "[[", 2))
+  }else{
+    hier_pp <- do.call(rbind, lapply(pp, "[[", 1)) %>% filter(div < 1)
+    sub_pp <- do.call(rbind, lapply(pp, "[[", 2)) %>% filter(div < 1)
+  }
+  
+  hier = hier_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
+    ggplot(aes(x = mean, y = reals.reals))+
+    {if(div)geom_point(aes(col = as.factor(divergences)))}+
+    geom_point()+
+    facet_wrap(~variable, scales = "free")+
+    theme_classic()+
+    geom_abline(slope = 1, intercept = 0)+
+    scale_color_manual("divergence?",values = c("black","red"))
+  
+
+  # Generate the regular expression pattern dynamically
+  pattern <- paste0("\\[", 1:subs, "\\]")
+  
+  # Filter the column
+  sub_pp <- sub_pp[grepl(paste(pattern, collapse = "|"), sub_pp$variable), ]
+  
+  
+  sub = sub_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
+    ggplot(aes(x = mean, y = reals.reals))+
+    {if(div)geom_point(aes(col = as.factor(divergences)))}+
+    geom_point()+
+    facet_wrap(~variable, scales = "free", ncol = subs)+
+    theme_classic()+
+    geom_abline(slope = 1, intercept = 0)+
+    scale_color_manual("divergence?",values = c("black","red"))
+  
+  return(list(hier = hier,sub = sub))
+  
+}
+
+
+get_corplot = function(fit1,fit2,variable){
+  
+  df1 = (fit1$summary(variables = variable))
+  df2 = (fit2$summary(variables = variable))
+  
+  df1$sess = df2$mean
+  
+  df1$sess_sd = df2$sd
+  
+  
+  plot = df1 %>% ggplot(aes(x = mean, y = sess)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = sess - sess_sd, ymax = sess + sess_sd), width = 0.005,linetype = "dashed") +
+    geom_errorbarh(aes(xmin = mean - sd, xmax = mean + sd), height = 0.005,linetype = "dashed") +
+    labs(x = "Session 1", y = "Session 2") +
+    ggtext::geom_richtext(aes(x = 0.1, y = 0.9,
+                              label = paste0("r = ",round(cor.test(df1$mean, df1$sess)$estimate[[1]],2), " [", round(cor.test(df1$mean, df1$sess)$conf.int[[1]],2)," ; ", round(cor.test(df1$mean, df1$sess)$conf.int[[2]],2),"]")))+ggtitle(paste0("test retest correlation of ",variable))+
+    theme_classic()
+  
+  return(plot)
+  
+}
