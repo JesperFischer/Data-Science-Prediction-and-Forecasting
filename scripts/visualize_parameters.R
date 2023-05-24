@@ -174,9 +174,6 @@ KALMAN_v2 = function(dd){
   
 }
 
-
-
-
 WB = function(dd){
   
   
@@ -283,7 +280,8 @@ plot_parameterrecovery = function(pp, div, subs){
 
 
 get_corplot = function(fit1,fit2,variable){
-  
+
+
   df1 = (fit1$summary(variables = variable))
   df2 = (fit2$summary(variables = variable))
   
@@ -292,12 +290,18 @@ get_corplot = function(fit1,fit2,variable){
   df1$sess_sd = df2$sd
   
   
+  fit <- lsfit(x = df1$sess, y = df1$mean, weights = list(x = df1$sess_sd, y = df1$sd))
+  
+  # Extract the correlation coefficient
+  correlation <- cor(fit$residuals$x, fit$residuals$y)
+  
+
   plot = df1 %>% ggplot(aes(x = mean, y = sess)) +
     geom_point() +
     geom_errorbar(aes(ymin = sess - sess_sd, ymax = sess + sess_sd), width = 0.005,linetype = "dashed") +
     geom_errorbarh(aes(xmin = mean - sd, xmax = mean + sd), height = 0.005,linetype = "dashed") +
     labs(x = "Session 1", y = "Session 2") +
-    ggtext::geom_richtext(aes(x = 0.1, y = 0.9,
+    ggtext::geom_richtext(aes(x = min(mean)+sd(mean), y = max(sess),
                               label = paste0("r = ",round(cor.test(df1$mean, df1$sess)$estimate[[1]],2), " [", round(cor.test(df1$mean, df1$sess)$conf.int[[1]],2)," ; ", round(cor.test(df1$mean, df1$sess)$conf.int[[2]],2),"]")))+ggtitle(paste0("test retest correlation of ",variable))+
     theme_classic()
   

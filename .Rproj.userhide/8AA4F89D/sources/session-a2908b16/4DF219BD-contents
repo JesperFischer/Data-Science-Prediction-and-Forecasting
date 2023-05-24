@@ -1,0 +1,176 @@
+---
+title: "equations"
+author: "Jesper Fischer Ehmsen"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+The Rescorla wagner model is a mathematical model of how classical conditions are thought to occur. The basic idea is that an agent updates his belief based on a weighted prediction error which is the difference between the last cue-stimulus association (association) and the last belief. The weighing of the prediction error is generally called the learning rate as this parameter determines the degree to which an agent utilises the new information to update his belief. This learning rate $\alpha$ is for the Rescorla Wagner agent assumed to be constant. 
+
+$$
+\begin{equation}
+\tag{1}
+E_t = E_{t-1}+\alpha*\underbrace{(A_{t-1}-E_{t-1})}_{\text{Prediction Error (PE)}}
+\end{equation}
+$$
+In the current experiment we modify this update equation to encapsulate the interaction between precept and expectations. We do this by modifying how the prediction error is calculated as now the prediction error is going to be calculated from the precept  $\psi_t$ that the expectation and the stimulus elicits. We assume for the RW agent that the weighting of stimulus and expectation is governed by a single parameter $\gamma$, like the learning rate $\alpha$ it determines the weight that is put on the stimulus vs expectation in determining what the participant felt on the current trial $\psi_t$
+
+$$
+\begin{equation}
+\tag{2}
+\psi_t = \gamma*S_t+(1-\gamma)*E_t
+\end{equation}
+$$
+
+
+$$
+\begin{equation}
+\tag{3}
+PE_t = \psi_t-E_{t-1}
+\end{equation}
+$$
+
+#### weighted bayes
+
+The weighted bayes model is inspired by bayes theorem where two sources of information a prior and a likelihood  are combined to a posterior belief. The difference between this and the Resorla wagner model is that the percept which is used to update the belief on each trial is calculated using a simplified bayes theorem, where the logit of the posterior is being set equal to the sum of the weighted logits of the sources of information. This entails that the two sources of information are weighted independently, resembling a normal linear regression.
+
+$$
+\begin{equation}
+\tag{4}
+\psi_t = S(w_1*S^{-1}(S_t)+w_2*S^{-1}(E_1))
+\end{equation}
+$$
+where $S(x) = \frac{1}{1+e^{-x}}$. The rest of the update equations remain similar to the Resorla Wagner, essentially also utilizing the RW model to update the expectation on each trial with the prediction error being (3)
+
+
+
+##### Kalman filter
+
+The Kalman filter can be thought of as a generalization of the RW model, where the assumption of the learning rate being constant is not met. From a normative perspective it makes sense that agents should update the rate at which they learn depending on the context of the experiment. In the Kalman filter model it is assumed that the learning rate is trial specific and dependent on the uncertainty of the prediction made, where higher uncertainty means a higher learning rate and lower uncertainty a lower learning rate. It is assumed in the Kalman filter that the agent keeps track of both belief as in the RW model, but also the uncertainty of that belief in order to update his belief based on both. 
+
+To arrive at the update equations for the kalman filter we start off by assuming that each agent observes the Stimulus with Gaussian noise:
+
+$$
+\begin{equation}
+\tag{5}
+S_t \sim \mathcal{N}{(\psi{_t}, \sigma_s^2)}
+\end{equation}
+$$
+
+
+Next we assume that the mean of this normal distribution is sampled from another normal distribution with the expectation at trial t as its mean 
+
+$$
+\begin{equation}
+\tag{6}
+\psi_t \sim \mathcal{N}{(E_t, \sigma_{\psi}^2)}
+\end{equation}
+$$
+Where this mean is updated based on the stimulus given the cue on previous trials 
+
+$$
+\begin{equation}
+\tag{7}
+E_t \sim \mathcal{N}{(E_{t-1}, \sigma_\eta^2)}
+\end{equation}
+$$
+Lastly this prior expectation, i.e. the expectation of the last trial is given by all the previous inputs which the agent keeps track off.
+
+$$
+\begin{equation}
+\tag{8}
+E_t | S_{{t-1}} \sim \mathcal{N}{(\mu_{E_{t-1}}, \sigma_{E_t}^2)}
+\end{equation}
+$$
+Now combining (8) and (6) we get a prior for the precept at a given trial, which is before getting the stimulus but after getting the cue
+
+
+$$
+\begin{equation}
+\tag{9}
+\psi_t | S_{{t-1}} \sim \mathcal{N}{(\mu_{E_{t-1}}, \sigma_{E_t}^2+ \sigma_{\psi}^2))}
+\end{equation}
+$$
+
+After the stimulus is the observed (the likelihood) (5) we can combine this with the prior (9) using bayes rule to get a posterior for percept.
+
+
+$$
+\begin{equation}
+\tag{10}
+\psi_t | S_{{t}} \sim \mathcal{N}{(\frac{\sigma_{s}^2*\mu_{E_{t-1}}+(\sigma_{\psi}^2+\sigma_{E_t}^2)*S_t}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}, \frac{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2*(\sigma_{\psi}^2+\sigma_{E_t}^2)}})
+\end{equation}
+$$
+The mean rating of the agent on trial t is therefore given by the mean, which can also be writting as:
+
+$$
+\begin{equation}
+\tag{11}
+\mu_{\psi_t} = \frac{\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}*\mu_{E_{t-1}}+\frac{\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}*S_t
+\end{equation}
+$$
+
+where it becomes evident that the mean rating at trial t is a weighting between the expectation and the stimulus on the current trial.
+
+After the posterior for the percept is calculated the belief is then updated which can then be used as priors for the next trial.
+
+
+$$
+\begin{equation}
+\tag{12}
+E_{t}|S_t \sim \mathcal{N}{(\frac{(\sigma_{s}^2+\sigma_{\psi}^2)*\mu_{E_{t-1}}+\sigma_{E_t}^2*S_t}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}, \frac{(\sigma_{s}^2+\sigma_{\psi}^2)*\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}+\sigma_\eta^2})
+\end{equation}
+$$
+
+It can be shown that these update equations for the expectation and the mean percept are a generalization of the above mentioned RW model if we define two trial by trial parameters $\gamma_{t}$ and $\alpha_{t}$
+
+
+$$
+\begin{equation}
+\tag{13}
+\gamma_{t} = \frac{\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}
+\end{equation}
+$$
+$$
+\begin{equation}
+\tag{14}
+\alpha_{t} = \frac{\sigma_{E_t}^2}{\sigma_{\psi}^2+\sigma_{E_t}^2}
+\end{equation}
+$$
+
+one can arrive at the following update equations for the percept and the expectation
+
+
+$$
+\begin{equation}
+\tag{15}
+\psi_{t} = (1-\gamma_{t})*S_{t}+\gamma_{t}*E_{t}
+\end{equation}
+$$
+
+$$
+\begin{equation}
+\tag{16}
+E_{t} = \alpha_{t}*\psi_{t}+(1-\alpha_{t})*E_{t}
+\end{equation}
+$$
+For the derivation of equation 15 and 16 readers are refereed to the supplementary material.
+
+
+
+
+```{r}
+
+
+
+```
+

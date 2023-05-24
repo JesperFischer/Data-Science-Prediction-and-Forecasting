@@ -1,0 +1,26 @@
+{
+    "id": "8045A983",
+    "path": "~/Data-Science-Prediction-and-Forecasting/scripts/visualize_parameters.R",
+    "project_path": "scripts/visualize_parameters.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1684682286770.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "265,2",
+        "scrollLine": "177"
+    },
+    "folds": "3|18|58|0|\n61|20|114|0|\n116|25|174|0|\n179|18|240|0|\n",
+    "lastKnownWriteTime": 1684880972,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1684880972980,
+    "read_only": false,
+    "read_only_alternatives": []
+}

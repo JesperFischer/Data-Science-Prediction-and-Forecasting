@@ -13,8 +13,6 @@ data {
 parameters {
   vector<lower=0,upper=1>[nsubs] alpha;
   vector<lower=0>[nsubs] precision_percept;
-  vector<lower=0>[nsubs] beta;
-  
   vector<lower=0, upper=1>[nsubs] w1;
 
   // Group-level parameters
@@ -23,7 +21,7 @@ parameters {
   real <lower=0, upper = 1> mu_w1;
   real <lower=0> kappa_w1;
  // Group-level parameters
-  real <lower=0> sd_beta;
+ 
   real <lower=0> sd_precision_percept;
 }
 
@@ -76,9 +74,9 @@ model {
     for (t in 1:ntrials){
       target += beta_proportion_lpdf(percept[t,s] | painMu[t,s], precision_percept[s]);
       
-      target += bernoulli_lpmf(percept_bin[t,s] | (painMu[t,s]^beta[s])/((painMu[t,s]^beta[s])+(1-painMu[t,s])^(beta[s])));
+      target += bernoulli_lpmf(percept_bin[t,s] | painMu[t,s]);
 
-      target += bernoulli_lpmf(expectPain[t,s] |  (expectMu[t,s]^beta[s])/((expectMu[t,s]^beta[s])+(1-expectMu[t,s])^(beta[s])));
+      target += bernoulli_lpmf(expectPain[t,s] |  expectMu[t,s]);
       
     }
     
@@ -86,7 +84,7 @@ model {
     target += beta_proportion_lpdf(w1[s] | mu_w1 , kappa_w1);
 
     target += lognormal_lpdf(precision_percept[s] | log(20), sd_precision_percept);
-    target += lognormal_lpdf(beta[s] | log(20), sd_beta);
+
     
   }
   
@@ -97,15 +95,13 @@ model {
   target += beta_proportion_lpdf(mu_w1 | 0.3 , 3) ; 
   target += lognormal_lpdf(kappa_w1 | log(30) , 0.5);
   
-  target += exponential_lpdf(sd_precision_percept | 1);
-  target += exponential_lpdf(sd_beta | 1);
+  target += exponential_lpdf(sd_precision_percept | 0.3);
 }
 
 generated quantities{
   
   
       real <lower=0> prior_sd_precision_percept;
-      real <lower=0> prior_sd_beta;
       
       real <lower=0> prior_kappa_alpha;
       real <lower=0, upper = 1> prior_mu_alpha;
@@ -117,7 +113,6 @@ generated quantities{
       
       real <lower=0, upper = 1> prior_alpha[nsubs];
       real <lower=0> prior_precision_percept[nsubs];
-      real <lower=0> prior_beta[nsubs];
       real <lower=0, upper = 1> prior_w1[nsubs];
       
       //trial level:
@@ -145,18 +140,15 @@ generated quantities{
       prior_mu_alpha = beta_proportion_rng(0.3,3);
       prior_kappa_alpha = lognormal_rng(log(30) , 0.5);
       
-      prior_sd_precision_percept = exponential_rng(1);
-      prior_sd_beta = exponential_rng(1);
-      
-      
+      prior_sd_precision_percept = exponential_rng(0.3);
+
       
       for (s in 1:nsubs){
         prior_alpha[s] = beta_proportion_rng(prior_mu_alpha , prior_kappa_alpha);
         prior_w1[s] = beta_proportion_rng(prior_mu_w1 , prior_kappa_w1);
         
         prior_precision_percept[s] = lognormal_rng(log(20), prior_sd_precision_percept);
-        prior_beta[s] = lognormal_rng(log(20), prior_sd_beta);
-        
+
     
         prior_association[1, s] = 0.5;
         prior_expectMu[161, s] = 0.5;
@@ -191,21 +183,21 @@ generated quantities{
       
           prior_percept[t,s] = beta_proportion_rng(prior_painMu[t,s], prior_precision_percept[s]);
           
-          prior_percept_bin[t,s] = bernoulli_rng((prior_painMu[t,s]^prior_beta[s])/((prior_painMu[t,s]^prior_beta[s])+(1-prior_painMu[t,s])^(prior_beta[s])));
+          prior_percept_bin[t,s] = bernoulli_rng(prior_painMu[t,s]);
     
-          prior_expectPain[t,s] = bernoulli_rng((prior_expectMu[t,s]^prior_beta[s])/((prior_expectMu[t,s]^prior_beta[s])+(1-prior_expectMu[t,s])^(prior_beta[s])));
+          prior_expectPain[t,s] = bernoulli_rng(prior_expectMu[t,s]);
         
           
           post_percept[t,s] = beta_proportion_rng(painMu[t,s], precision_percept[s]);
           
-          post_percept_bin[t,s] = bernoulli_rng((painMu[t,s]^beta[s])/((painMu[t,s]^beta[s])+(1-painMu[t,s])^(beta[s])));
+          post_percept_bin[t,s] = bernoulli_rng(painMu[t,s]);
     
-          post_expectPain[t,s] = bernoulli_rng((expectMu[t,s]^beta[s])/((expectMu[t,s]^beta[s])+(1-expectMu[t,s])^(beta[s])));
+          post_expectPain[t,s] = bernoulli_rng(expectMu[t,s]);
           
           
-          log_lik[t,s] = bernoulli_lpmf(percept_bin[t,s] | (painMu[t,s]^beta[s])/((painMu[t,s]^beta[s])+(1-painMu[t,s])^(beta[s])))+
+          log_lik[t,s] = bernoulli_lpmf(percept_bin[t,s] | painMu[t,s])+
                          beta_proportion_lpdf(percept[t,s] | painMu[t,s], precision_percept[s])+
-                         bernoulli_lpmf(expectPain[t,s] |  (expectMu[t,s]^beta[s])/((expectMu[t,s]^beta[s])+(1-expectMu[t,s])^(beta[s])));
+                         bernoulli_lpmf(expectPain[t,s] |  expectMu[t,s]);
         
         }
       }   

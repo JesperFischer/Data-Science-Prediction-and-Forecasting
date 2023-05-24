@@ -1,0 +1,26 @@
+{
+    "id": "EB42CD0C",
+    "path": "~/Data-Science-Prediction-and-Forecasting/scripts/agent.R",
+    "project_path": "scripts/agent.R",
+    "type": "r_source",
+    "hash": "2229265422",
+    "contents": "",
+    "dirty": false,
+    "created": 1684682367274.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "515,26",
+        "scrollLine": "0"
+    },
+    "folds": "25|39|90|0|\n92|60|156|0|\n159|41|181|0|\n185|43|261|0|\n264|45|343|0|\n345|65|422|0|\n531|44|590|0|\n",
+    "lastKnownWriteTime": 1684822474,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1684822545077,
+    "read_only": false,
+    "read_only_alternatives": []
+}

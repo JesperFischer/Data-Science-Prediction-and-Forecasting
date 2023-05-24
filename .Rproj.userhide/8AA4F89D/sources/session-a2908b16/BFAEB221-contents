@@ -1,0 +1,409 @@
+---
+title: "manuscript"
+author: "Jesper Fischer Ehmsen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r fitting real data}
+df= read.csv(here::here("data","data_TPL_AC.csv")) %>% 
+  rename_all(tolower) %>% 
+  filter(trial != 0) %>% 
+  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>% 
+  mutate_all(replace_na, 0)
+
+df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
+
+#ratings
+df %>% filter(session == 2) %>% ggplot(aes(x = percept, fill = as.factor(stim))) + geom_histogram()
+#cue-contingency
+df %>% filter(session == 1, id == 1) %>% ggplot(aes(x = trial, y = u)) + geom_point()+theme_classic()
+
+
+df = df %>% filter(session == 1)
+
+
+source(here::here("stan_functions.R"))
+#fitting hierachically
+data = df %>% mutate(percept = percept/100)
+
+
+
+data = data %>% mutate(across(percept, ~case_when(
+    . < 0.001 ~ 0.001,
+    . > 0.999 ~ 0.999,
+    TRUE ~ .
+  )))
+
+
+data1 = list(nsubs = length(unique(data$id)),
+            ntrials = nrow(data %>% filter(id %in% unique(id)[1])),
+            percept = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept)%>% mutate(trial= NULL)),
+            expectPain = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)),
+            percept_bin = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept_bin)%>% mutate(trial= NULL)),
+            stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)),
+            cues = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)))
+
+
+mod_rw = cmdstan_model(here::here("myRW_real.stan"))
+
+fit_rw <- mod_rw$sample(
+      data = data1,
+      chains = 4, 
+      parallel_chains = 4,
+      refresh = 100,
+      adapt_delta = 0.90,
+      max_treedepth = 12
+    )
+
+
+variable = fit$metadata()$stan_variables
+
+sum_var = c("alpha","beta","w1","precision_percept")
+
+result <- sapply(sum_var, function(x) grepl(x, variable, fixed = TRUE))
+
+variabless = variable[which(rowSums(!result) == ncol(result))]
+
+variablesss = variable[!variable %in% variabless]
+
+
+sum = fit$summary(variables = variablesss)
+```
+
+
+```{r}
+
+source(here::here("stan_functions.R"))
+diag_alpha = get_diag(fit = fit,
+         parameter = "alpha",
+         prior = FALSE,
+         nsubs = 50)
+
+diag_w1 = get_diag(fit = fit,
+         parameter = "w1",
+         prior = FALSE,
+         nsubs = 50)
+
+
+diag_beta = get_diag(fit = fit,
+         parameter = "beta",
+         prior = FALSE,
+         nsubs = 50)
+
+diag_precision_percept = get_diag(fit = fit,
+         parameter = "precision_percept",
+         prior = FALSE,
+         nsubs = 50)
+
+
+```
+
+```{r}
+source(here::here("stan_functions.R"))
+
+hierppu = ppu_hier(fit = fit,
+         parameters = c("alpha","w1","beta","precision_percept"),
+         reals = NA)
+
+
+
+subw1 = ppu_sub(fit = fit,
+        parameter = "w1",
+        reals = NA,
+        nsubs = 50,
+        lims = -1,
+        lime = 1
+        )
+
+subalpha = ppu_sub(fit = fit,
+        parameter = "alpha",
+        reals = NA,
+        nsubs = 50,
+        lims = -1,
+        lime = 1
+        )
+
+subbeta = ppu_sub(fit = fit,
+        parameter = "beta",
+        reals = NA,
+        nsubs = 50,
+        lims = -5,
+        lime = 150
+        )
+
+subpp = ppu_sub(fit = fit,
+        parameter = "precision_percept",
+        reals = NA,
+        nsubs = 50,
+        lims = -5,
+        lime = 100
+        )
+
+
+ppcheck = ppcheck(fit = fit,
+        df = data,
+        n = 20,
+        prior = FALSE)
+
+```
+
+
+```{r}
+loglik = as_draws_df(fit$draws(variables = "log_lik")) %>% drop_na()
+loo_RW = loo::loo(as.matrix(loglik))
+
+```
+
+```{r}
+
+sub = fit_rw$summary(variables = c("beta","alpha","w1","precision_percept"))
+
+sub$id <- as.factor(gsub(".*\\[(\\d+)\\].*", "\\1", sub$variable))
+
+sub$variable2 <- gsub("\\[.*\\]", "", sub$variable)
+
+
+sub %>% filter(variable2 %in% c("w1","alpha")) %>% ggplot(aes(x = variable2, y = mean))+
+  facet_wrap(~id)+
+  geom_point()+
+  coord_cartesian(ylim = c(0,1))
+
+sub %>% filter(variable2 %in% c("beta","precision_percept")) %>% ggplot(aes(x = variable2, y = mean))+
+  facet_wrap(~id)+
+  geom_point()+
+  coord_cartesian(ylim = c(0,20))
+
+
+sub %>% filter(variable2 %in% c("w1","alpha","beta","precision_percept")) %>% select(mean,variable2) %>% 
+  pivot_wider(names_from = variable2, values_from = mean) %>% 
+  unnest(cols = everything()) %>% 
+  ggplot(aes(x = alpha, y = precision_percept))+geom_point()
+
+
+#plot participant 1
+associations = fit_rw$summary(variables = "association")
+exp = fit_rw$summary(variables = "expectMu")
+
+ids = 24
+
+id_ass <- associations[grepl(paste0("^association\\[\\d+,",ids,"\\]$"), associations$variable), ]
+id_exp <- exp[grepl(paste0("^expectMu\\[\\d+,",ids,"\\]$"), exp$variable), ]
+
+
+df %>% filter(id == ids) %>% ggplot(aes(x = trial))+
+  geom_point(aes(y = u-0.1), col = "green")+
+  geom_point(aes(y = pred), col = "red")+
+  geom_line(data = id_ass, aes(x = 1:nrow(id1), y = mean))+theme_classic()
+
+
+df %>% filter(id == ids) %>% 
+  ggplot+
+  geom_point(aes(y = percept, x = id_exp$mean[1:160], col = as.factor(stim)))+
+  geom_smooth(aes(y = percept, x = id_exp$mean[1:160],col = as.factor(stim)),method = "lm")+
+  theme_classic()
+
+
+```
+
+
+
+```{r}
+df= read.csv(here::here("data","data_TPL_AC.csv")) %>% 
+  rename_all(tolower) %>% 
+  filter(trial != 0) %>% 
+  rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>% 
+  mutate_all(replace_na, 0)
+
+df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
+
+#ratings
+df %>% filter(session == 2) %>% ggplot(aes(x = percept, fill = as.factor(stim))) + geom_histogram()
+#cue-contingency
+df %>% filter(session == 1, id == 1) %>% ggplot(aes(x = trial, y = u)) + geom_point()+theme_classic()
+
+
+df = df %>% filter(session == 1)
+
+
+source(here::here("stan_functions.R"))
+#fitting hierachically
+data = df %>% mutate(percept = percept/100)
+
+
+
+data = data %>% mutate(across(percept, ~case_when(
+    . < 0.001 ~ 0.001,
+    . > 0.999 ~ 0.999,
+    TRUE ~ .
+  )))
+
+
+data1 = list(nsubs = length(unique(data$id)),
+            ntrials = nrow(data %>% filter(id %in% unique(id)[1])),
+            percept = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept)%>% mutate(trial= NULL)),
+            expectPain = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = pred)%>% mutate(trial= NULL)),
+            percept_bin = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = percept_bin)%>% mutate(trial= NULL)),
+            stim = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = stim)%>% mutate(trial= NULL)),
+            cues = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = cue)%>% mutate(trial= NULL)),
+            u = as.matrix(data %>% pivot_wider(id_cols = trial, names_from = id, values_from = u)%>% mutate(trial= NULL))
+            )
+
+
+mod_kalman = cmdstan_model(here::here("myKalmanfilter.stan"))
+
+fit_kalman <- mod_kalman$sample(
+      data = data1,
+      chains = 4, 
+      parallel_chains = 4,
+      refresh = 100,
+      adapt_delta = 0.90,
+      max_treedepth = 12
+    )
+
+variable = fit$metadata()$stan_variables
+
+sum_var = c("sigmaPsi","sigmaEpsilon","sigmaEta")
+
+result <- sapply(sum_var, function(x) grepl(x, variable, fixed = TRUE))
+
+variabless = variable[which(rowSums(!result) == ncol(result))]
+
+variablesss = variable[!variable %in% variabless]
+
+
+sum_kalman = fit$summary(variables = variablesss)
+```
+
+
+```{r}
+
+source(here::here("stan_functions.R"))
+diag_sigmaPsi = get_diag(fit = fit,
+         parameter = "sigmaPsi",
+         prior = FALSE,
+         nsubs = 50)
+
+diag_sigmaEpsilon = get_diag(fit = fit,
+         parameter = "sigmaEpsilon",
+         prior = FALSE,
+         nsubs = 50)
+
+
+diag_sigmaEta = get_diag(fit = fit,
+         parameter = "sigmaEta",
+         prior = FALSE,
+         nsubs = 50)
+
+
+source(here::here("stan_functions.R"))
+
+hierppu = ppu_hier(fit = fit,
+         parameters = c("sigmaPsi","sigmaEpsilon","sigmaEta"),
+         reals = NA)
+
+
+
+subsigmaPsi = ppu_sub(fit = fit,
+        parameter = "sigmaPsi",
+        reals = NA,
+        nsubs = 50,
+        lims = -0.2,
+        lime = 3
+        )
+
+subsigmaEpsilon = ppu_sub(fit = fit,
+        parameter = "sigmaEpsilon",
+        reals = NA,
+        nsubs = 50,
+        lims = -0.2,
+        lime = 3
+        )
+
+subsigmaEta = ppu_sub(fit = fit,
+        parameter = "sigmaEta",
+        reals = NA,
+        nsubs = 50,
+        lims = -0.2,
+        lime = 3
+        )
+
+
+ppchecks = ppcheck(fit = fit,
+        df = data,
+        n = 20,
+        prior = FALSE)
+
+```
+
+
+
+```{r}
+#plot participant 1
+associations = fit_kalman$summary(variables = "association")
+exp = fit_kalman$summary(variables = "exp_mu")
+
+id = 20
+
+id_ass <- associations[grepl(paste0("^association\\[\\d+,",id,"\\]$"), associations$variable), ]
+id_exp <- exp[grepl(paste0("^exp_mu\\[\\d+,",id,"\\]$"), exp$variable), ]
+
+
+df %>% filter(id == 16) %>% ggplot(aes(x = trial))+
+  geom_point(aes(y = u-0.1), col = "green")+
+  geom_point(aes(y = pred), col = "red")+
+  geom_line(data = id_ass, aes(x = 1:nrow(id1), y = mean))+theme_classic()
+
+
+df %>% filter(id == 16) %>% 
+  ggplot+
+  geom_point(aes(y = percept, x = id_exp$mean[1:160], col = as.factor(stim)))+
+  geom_smooth(aes(y = percept, x = id_exp$mean[1:160],col = as.factor(stim)),method = "lm")
+
+
+```
+
+
+
+
+```{r}
+#model comparison:
+loglik_kalman = as_draws_df(fit_kalman$draws(variables = "log_lik")) %>% drop_na()
+loo_kalman = loo::loo(as.matrix(loglik))
+```
+
+
+
+
+```{r}
+#find nans:
+nan_rw = which(rowSums(is.na(loglik)) > 0)
+nan_kalman = which(rowSums(is.na(loglik_kalman)) > 0)
+
+nans = c(nan_rw,nan_kalman)
+
+nan_rows <- sort(unique(nans))
+
+
+loglik_kalman = loglik_kalman[!nan_rows,]
+
+
+loglik_kalman <- as.matrix(loglik_kalman[!(1:nrow(loglik_kalman) %in% nan_rows), ])
+loglik_rw <- as.matrix(loglik_rw[!(1:nrow(loglik_rw) %in% nan_rows), ])
+
+
+
+loo_kalman = loo::loo(loglik_kalman)
+
+loo_rw = loo::loo(loglik_rw)
+
+loo::loo_compare(list(loo_kalman,loo_rw))
+```
+
