@@ -63,12 +63,6 @@ transformed parameters {
       association[1,s] = 0.5;
       exp_var[1,s] = mu_sigmaEta+sigmaEtaID[s];
       
-      // print("eta");
-      // print(mu_sigmaEta+sigmaEtaID[s]);
-      // print("ep");
-      // print(mu_sigmaEpsilon+sigmaEpsilonID[s]);
-      // print("psi");
-      // print(mu_sigmaPsi+sigmaPsiID[s]);
     for (t in 1:(ntrials)){
       
       if(cues[t,s] == 1){

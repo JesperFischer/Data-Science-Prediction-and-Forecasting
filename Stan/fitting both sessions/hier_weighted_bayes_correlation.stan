@@ -150,6 +150,89 @@ generated quantities{
   array[ntrials, nsubs,sesions] real log_lik;
 
   
+  real correlation_alpha;
+  real sum_squared_diff_alpha;
+  real sum_product_diff_alpha;
+
+  array[nsubs] real diff_s1_alpha;
+  array[nsubs] real diff_s2_alpha;
+  array[nsubs] real sq_diff_s1_alpha;
+  array[nsubs] real sq_diff_s2_alpha;
+
+  array[nsubs] real product_diff_alpha;
+  
+  real correlation_w1;
+  real sum_squared_diff_w1;
+  real sum_product_diff_w1;
+
+  array[nsubs] real diff_s1_w1;
+  array[nsubs] real diff_s2_w1;
+  array[nsubs] real sq_diff_s1_w1;
+  array[nsubs] real sq_diff_s2_w1;
+
+  array[nsubs] real product_diff_w1;
+  
+  real correlation_w2;
+  real sum_squared_diff_w2;
+  real sum_product_diff_w2;
+
+  array[nsubs] real diff_s1_w2;
+  array[nsubs] real diff_s2_w2;
+  array[nsubs] real sq_diff_s1_w2;
+  array[nsubs] real sq_diff_s2_w2;
+
+  array[nsubs] real product_diff_w2;
+  
+  for (s in 1:nsubs){
+    diff_s1_w1[s] = mean(w1[,1])-w1[s,1];
+    diff_s2_w1[s] = mean(w1[,2])-w1[s,2];
+    
+    product_diff_w1[s] = diff_s1_w1[s] * diff_s2_w1[s];
+    
+    sq_diff_s1_w1[s] = (mean(w1[,1])-w1[s,1])^2;
+    sq_diff_s2_w1[s] = (mean(w1[,2])-w1[s,2])^2;
+  }
+  
+  sum_squared_diff_w1 = sum(sq_diff_s1_w1) * sum(sq_diff_s2_w1);
+  
+  sum_product_diff_w1 = sum(product_diff_w1);
+
+  correlation_w1 = sum_product_diff_w1 / sqrt(sum_squared_diff_w1);
+  
+  for (s in 1:nsubs){
+    diff_s1_w2[s] = mean(w2[,1])-w2[s,1];
+    diff_s2_w2[s] = mean(w2[,2])-w2[s,2];
+    
+    product_diff_w2[s] = diff_s1_w2[s] * diff_s2_w2[s];
+    
+    sq_diff_s1_w2[s] = (mean(w2[,1])-w2[s,1])^2;
+    sq_diff_s2_w2[s] = (mean(w2[,2])-w2[s,2])^2;
+  }
+  
+  sum_squared_diff_w2 = sum(sq_diff_s1_w2) * sum(sq_diff_s2_w2);
+  
+  sum_product_diff_w2 = sum(product_diff_w2);
+
+  correlation_w2 = sum_product_diff_w2 / sqrt(sum_squared_diff_w2);
+  
+
+  for (s in 1:nsubs){
+    diff_s1_alpha[s] = mean(alpha[,1])-alpha[s,1];
+    diff_s2_alpha[s] = mean(alpha[,2])-alpha[s,2];
+    
+    product_diff_alpha[s] = diff_s1_alpha[s] * diff_s2_alpha[s];
+    
+    sq_diff_s1_alpha[s] = (mean(alpha[,1])-alpha[s,1])^2;
+    sq_diff_s2_alpha[s] = (mean(alpha[,2])-alpha[s,2])^2;
+  }
+  
+  sum_squared_diff_alpha = sum(sq_diff_s1_alpha) * sum(sq_diff_s2_alpha);
+  
+  sum_product_diff_alpha = sum(product_diff_alpha);
+
+  correlation_alpha = sum_product_diff_alpha / sqrt(sum_squared_diff_alpha);
+
+  
   
   for(sess in 1:sesions){
     prior_mu_w1[sess] = beta_proportion_rng(0.1,10);
