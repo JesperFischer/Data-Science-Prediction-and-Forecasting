@@ -200,7 +200,8 @@ parameter_recovery_kalman = function(parameters){
     sub_parameters = c("sigmaEpsilon","sigmaEta","sigmaPsi")
     return(list(hier = data.frame(fit$summary(hier_parameters),
                                   reals = hier %>% dplyr::select(all_of(hier_parameters)) %>% pivot_longer(everything()) %>% rename(reals = value),
-                                  div = sum(fit$diagnostic_summary()$num_divergent),index = index),
+                                  div = sum(fit$diagnostic_summary()$num_divergent),
+                                  index = index),
                 sub = data.frame(fit$summary(sub_parameters) %>% arrange(variable),
                                  reals = df %>% filter(trial == 1) %>% mutate(ids = 1:nrow(.)) %>% dplyr::select(all_of(sub_parameters),ids) %>% pivot_longer(cols = -ids) %>% rename(reals =value) %>% mutate(names = paste0(name,"[",ids,"]")) %>% arrange(names) %>% select(names,reals),
                                  div = sum(fit$diagnostic_summary()$num_divergent),index = index)))}else{
