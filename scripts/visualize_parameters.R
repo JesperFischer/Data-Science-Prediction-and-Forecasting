@@ -237,6 +237,73 @@ WB = function(dd){
   
 }
 
+RW_logistic_vis = function(dd){
+  
+  
+  scripts = c("agent.R","parameter_recovery.R","stan_functions.R")
+  q = lapply(here("scripts", scripts), source)
+  
+  alpha = seq(0.1,0.5,length.out = 3)
+  b0 = -1.5
+  b1 = seq(0.1,2,length.out = 3)
+  b2 = seq(0.1,2,length.out = 3)
+  
+  b0_b = -4
+  b1_b = 7.8
+  b2_b = 0.7
+  
+  
+  #precision_percept = seq(10,100,50)
+  #beta = seq(1,50,20)
+  
+  percept_precision = seq(10,300,length.out = 3)
+  
+  parameters = expand.grid(alpha = alpha,b0=b0,b1=b1,b2=b2,b0_b=b0_b,b1_b=b1_b,b2_b=b2_b, percept_precision = percept_precision)
+  
+  
+  
+  parameters$id = 1:nrow(parameters)
+  
+  data_list <- split(parameters, parameters$id)
+  
+  plan(multisession, workers = 12)
+  
+  dd = get_experiment()
+  
+  dd = furrr::future_map_dfr(data_list, ~rw_logistic_v2(.x, dd), .progress = TRUE, .options = furrr_options(seed = 123))
+  
+  dd$stim = as.factor(dd$stim)
+  dd$percept_precision = as.factor(dd$percept_precision)
+  
+  
+  levels(dd$stim) = c("Warm","Hot")
+  
+  
+  plot1 = dd %>% 
+    ggplot()+
+    geom_line(aes(x = trial, y = belief))+
+    geom_point(aes(x = trial, y = u), col = "orange")+
+    geom_line(aes(x = trial, y = desired))+
+    facet_grid(alpha~b2, labeller = label_both)+
+    theme_classic()+
+    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 5))+
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 5))
+  
+  
+  plot2 = dd %>% filter(alpha == 0.1) %>% ggplot(aes(expect, y = percept,col = percept_precision, group = interaction(stim, percept_precision)))+
+    geom_point(aes(shape = stim))+
+    facet_grid(b1~b2, labeller = label_both)+
+    geom_smooth(method = "lm")+
+    theme_classic()+
+    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 4))+
+    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 4))+ theme(legend.position = "top")+ggtitle("Alpha = 0.1")
+  
+  
+  plot1+plot2
+  
+}
+
+
 
 plot_parameterrecovery = function(pp, div, subs){
   
@@ -290,10 +357,10 @@ get_corplot = function(fit1,fit2,variable){
   df1$sess_sd = df2$sd
   
   
-  fit <- lsfit(x = df1$sess, y = df1$mean, weights = list(x = df1$sess_sd, y = df1$sd))
+  #fit <- lsfit(x = df1$sess, y = df1$mean, weights = list(x = df1$sess_sd, y = df1$sd))
   
   # Extract the correlation coefficient
-  correlation <- cor(fit$residuals$x, fit$residuals$y)
+  #correlation <- cor(fit$residuals$x, fit$residuals$y)
   
 
   plot = df1 %>% ggplot(aes(x = mean, y = sess)) +

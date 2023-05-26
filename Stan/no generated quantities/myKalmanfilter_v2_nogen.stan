@@ -59,7 +59,7 @@ transformed parameters {
       }
       
       
-      perceptmuu[t,s] =  (sigmaEpsilon[s] * association[t,s] + (sigmaPsi[s] + exp_var[t,s]) * stim[t,s] ) / 
+      perceptmuu[t,s] =  (sigmaEpsilon[s] * exp_muu[t,s] + (sigmaPsi[s] + exp_var[t,s]) * stim[t,s] ) / 
                         (sigmaEpsilon[s] + sigmaPsi[s] + exp_var[t,s]);
                        
                        
@@ -69,7 +69,7 @@ transformed parameters {
                         
                         
       
-      association[t+1,s] = ((sigmaEpsilon[s] + sigmaPsi[s]) * association[t,s] + (exp_var[t,s] * u[t,s])) / 
+      association[t+1,s] = ((sigmaEpsilon[s] + sigmaPsi[s]) * exp_muu[t,s] + (exp_var[t,s] * u[t,s])) / 
                                        (sigmaEpsilon[s] + sigmaPsi[s] + exp_var[t,s]) ;
                                        
       exp_var[t+1,s] = ((sigmaEpsilon[s] + sigmaPsi[s]) * exp_var[t,s] / (sigmaEpsilon[s] + sigmaPsi[s] + exp_var[t,s])) + sigmaEta[s];

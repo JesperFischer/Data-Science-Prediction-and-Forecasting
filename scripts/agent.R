@@ -182,7 +182,6 @@ our_hier_rw_agent = function(parameters){
 }
 
 
-
 our_kalman_agent = function(parameters,dd){
   
   cue = dd$cue
@@ -668,3 +667,188 @@ hier_Bayes_f = function(parameters){
   
   
 }
+
+
+
+rw_logistic = function(alpha,b0,b1,b2,b0_b,b1_b,b2_b,percept_precision){
+  
+  dd = get_experiment()
+  
+  cue = dd$cue
+  stim = dd$stim
+  u = dd$u
+  bias = dd$bias
+  
+  ntrials = nrow(dd)
+  pred = array(NA, ntrials)
+  belief = array(NA, ntrials)
+  expect = array(NA, ntrials)
+  percept = array(NA, ntrials)
+  percept_bin = array(NA, ntrials)
+  perceptmu = array(NA, ntrials)
+  thetapercept = array(NA, ntrials)
+
+  belief[1] = 0.5;
+  expect[1] = 0.5;
+  
+  pred[1] = rbinom(1,1,belief[1])
+  
+  perceptmu[1] = inv_logit_scaled(b0+b1*stim[1]+b2*expect[1])
+  
+  percept[1] = extraDistr::rprop(1,percept_precision,perceptmu[1])
+  
+  thetapercept[1] = inv_logit_scaled(b0_b+b1_b*stim[1]+b2_b*expect[1])
+  
+  percept_bin[1] = rbinom(1,1,thetapercept[1])
+  
+  
+  
+  for (t in 2:ntrials){
+    
+    
+    belief[t] = belief[t-1]+alpha*(u[t-1]-belief[t-1])
+    pred[t] = rbinom(1,1,belief[t])
+    
+    
+    if(cue[t] == 1){
+      expect[t] = belief[t]
+    }else{
+      expect[t] = 1-belief[t]
+    }
+    
+    perceptmu[t] = inv_logit_scaled(b0+b1*stim[t]+b2*expect[t])
+    
+    percept[t] = extraDistr::rprop(1,percept_precision,perceptmu[t])
+    
+    thetapercept[t] = inv_logit_scaled(b0_b+b1_b*stim[t]+b2_b*expect[t])
+    
+    percept_bin[t] = rbinom(1,1,thetapercept[t]);
+    
+    
+    
+  }
+    
+  df = data.frame(u = u[1:ntrials], cue = cue[1:ntrials], stim = stim[1:ntrials], expect = expect[1:ntrials], pred = pred[1:ntrials],
+                  perceptmu = perceptmu[1:ntrials], percept_bin = percept_bin[1:ntrials], percept = percept[1:ntrials],
+                  alpha = alpha, percept_precision = percept_precision, b0 = b0, b1 = b1, b2 = b2, b0_b = b0_b, b1_b = b1_b, b2_b = b2_b,
+                  trial = 1:ntrials, desired = rep(bias,1), id = rnorm(1,0,1))
+  
+  return(df)
+
+  
+  
+  
+  
+}
+
+rw_logistic_v2 = function(parameters, dd){
+  
+  alpha = parameters$alpha
+  b0 = parameters$b0
+  b1 = parameters$b1
+  b2 = parameters$b2
+  b0_b = parameters$b0_b
+  b1_b = parameters$b1_b
+  b2_b = parameters$b2_b
+  percept_precision = parameters$percept_precision
+  
+  
+  cue = dd$cue
+  stim = dd$stim
+  u = dd$u
+  bias = dd$bias
+  
+  ntrials = nrow(dd)
+  pred = array(NA, ntrials)
+  belief = array(NA, ntrials)
+  expect = array(NA, ntrials)
+  percept = array(NA, ntrials)
+  percept_bin = array(NA, ntrials)
+  perceptmu = array(NA, ntrials)
+  thetapercept = array(NA, ntrials)
+  
+  belief[1] = 0.5;
+  expect[1] = 0.5;
+  
+  pred[1] = rbinom(1,1,belief[1])
+  
+  perceptmu[1] = inv_logit_scaled(b0+b1*stim[1]+b2*expect[1])
+  
+  percept[1] = extraDistr::rprop(1,percept_precision,perceptmu[1])
+  
+  thetapercept[1] = inv_logit_scaled(b0_b+b1_b*stim[1]+b2_b*expect[1])
+  
+  percept_bin[1] = rbinom(1,1,thetapercept[1])
+  
+  
+  
+  for (t in 2:ntrials){
+    
+    
+    belief[t] = belief[t-1]+alpha*(u[t-1]-belief[t-1])
+    pred[t] = rbinom(1,1,belief[t])
+    
+    
+    if(cue[t] == 1){
+      expect[t] = belief[t]
+    }else{
+      expect[t] = 1-belief[t]
+    }
+    
+    perceptmu[t] = inv_logit_scaled(b0+b1*stim[t]+b2*expect[t])
+    
+    percept[t] = extraDistr::rprop(1,percept_precision,perceptmu[t])
+    
+    thetapercept[t] = inv_logit_scaled(b0_b+b1_b*stim[t]+b2_b*expect[t])
+    
+    percept_bin[t] = rbinom(1,1,thetapercept[t]);
+    
+    
+    
+  }
+  
+  df = data.frame(u = u[1:ntrials], cue = cue[1:ntrials], stim = stim[1:ntrials], expect = expect[1:ntrials], belief = belief[1:ntrials], pred = pred[1:ntrials],
+                  perceptmu = perceptmu[1:ntrials], percept_bin = percept_bin[1:ntrials], percept = percept[1:ntrials],
+                  alpha = alpha, percept_precision = percept_precision, b0 = b0, b1 = b1, b2 = b2, b0_b = b0_b, b1_b = b1_b, b2_b = b2_b,
+                  trial = 1:ntrials, desired = rep(bias,1), id = rnorm(1,0,1))
+  
+  return(df)
+  
+  
+  
+  
+  
+}
+
+
+hier_rw_logistic = function(parameters){
+  
+  nsubs = parameters$nsubs
+  
+  df = data.frame()
+  for (s in 1:nsubs){
+    
+    df1 = rw_logistic(alpha = extraDistr::rprop(1,parameters$kappa_alpha,parameters$mu_alpha),
+                         b0 = rnorm(1,parameters$mu_b0, parameters$sd_b0),
+                         b1 = rnorm(1,parameters$mu_b1, parameters$sd_b1),
+                         b2 = rnorm(1,parameters$mu_b2, parameters$sd_b2),
+                         b0_b = rnorm(1,parameters$mu_b0_b, parameters$sd_b0_b),
+                         b1_b = rnorm(1,parameters$mu_b1_b, parameters$sd_b1_b),
+                         b2_b = rnorm(1,parameters$mu_b2_b, parameters$sd_b2_b),
+                         percept_precision = rexp(1,parameters$sd_percept_precision)
+    )
+    
+    
+    
+    df = rbind(df,df1)
+    
+  }
+  
+  
+  return(list(df, parameters))
+  
+  
+  
+}
+
+

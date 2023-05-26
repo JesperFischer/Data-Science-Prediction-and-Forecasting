@@ -148,8 +148,6 @@ generated quantities{
       array[nsubs] real product_diff_alpha;
       
       
-      
-      
       real correlation_w1;
       real sum_squared_diff_w1;
       real sum_product_diff_w1;
