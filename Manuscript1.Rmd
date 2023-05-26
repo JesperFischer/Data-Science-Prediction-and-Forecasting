@@ -17,7 +17,7 @@ q = lapply(here("scripts", scripts), source)
 
 
 
-```{r parameters visualization, fig.height=10, fig.width=10}
+```{r parameters visualization, fig.height=10, fig.width=12}
 dd = get_experiment()
 
 rwplot = RW(dd)
@@ -43,7 +43,7 @@ trial_struc+kalmanplot+rwplot+wbplot+plot_layout(design = layout)+plot_annotatio
 
 
 
-RW_logistic = RW_logistic_vis(dd)
+#RW_logistic = RW_logistic_vis(dd)
 ```
 
 
@@ -177,6 +177,66 @@ kalman_pp = furrr::future_map(data_list, ~parameter_recovery_kalman(.x), .progre
 
 
 
+```{r parameter recovery for logistic}
+mu_alpha = seq(0.1,0.5, length.out = 5)
+kappa_alpha = seq(10,100, length.out = 2)
+
+mu_b0 = -1.5
+sd_b0 = 0.5
+
+mu_b1 = seq(0.1,2,length.out = 5)
+sd_b1 = seq(0.1,2,length.out = 3)
+
+mu_b2 = seq(0.1,2,length.out = 5)
+sd_b2 = seq(0.1,2,length.out = 3)
+
+
+mu_b0_b = -4
+sd_b0_b = 0.5
+
+mu_b1_b = 7
+sd_b1_b = 0.5
+
+mu_b2_b = 0.7
+sd_b2_b = 0.5
+
+sd_percept_precision = 0.8
+
+nsubs = 10
+
+parameters = expand.grid(mu_alpha = mu_alpha,
+                         kappa_alpha = kappa_alpha,
+                         mu_b0 = mu_b0,
+                         sd_b0 = sd_b0,
+                         mu_b1 = mu_b1,
+                         sd_b1 = sd_b1,
+                         mu_b2 = mu_b2,
+                         sd_b2 = sd_b2,
+                         mu_b0_b = mu_b0_b,
+                         sd_b0_b = sd_b0_b,
+                         mu_b1_b = mu_b1_b,
+                         sd_b1_b = sd_b1_b,
+                         mu_b2_b = mu_b2_b,
+                         sd_b2_b = sd_b2_b,
+                         sd_percept_precision = sd_percept_precision,
+                         nsubs = nsubs)
+
+
+
+parameters$id = 1:nrow(parameters)
+
+data_list <- split(parameters, parameters$id)
+
+plan(multisession, workers = 5)
+
+
+rw_pp = furrr::future_map(data_list, ~parameter_recovery_logistic_rw(.x), .progress = TRUE, .options = furrr_options(seed = 123))
+
+
+```
+
+
+
 ```{r}
 
 files = paste0(here::here("workspace","parameterrecovery"),"/",list.files(here::here("workspace","parameterrecovery")))
@@ -250,24 +310,9 @@ parameters = expand.grid(nsubs = nsubs,
 parameters$id = 1:nrow(parameters)
 data_list_wb <- split(parameters, parameters$id)
 
-######################################### Kalman
+######################################### logistic RW
 
-mu_sigmaEta = rep(0.1,100)
-mu_sigmaPsi = 0.1
-mu_sigmaEpsilon = 2
-sd_sigmaEta = 0.1
-sd_sigmaPsi = 0.1
-sd_sigmaEpsilon = 0.1
-nsubs = 10
-parameters = expand.grid(mu_sigmaEta = mu_sigmaEta,
-                         mu_sigmaPsi = mu_sigmaPsi,
-                         mu_sigmaEpsilon = mu_sigmaEpsilon,
-                         sd_sigmaEta = sd_sigmaEta,
-                         sd_sigmaPsi = sd_sigmaPsi,
-                         sd_sigmaEpsilon = sd_sigmaEpsilon,
-                         nsubs = nsubs)
-parameters$id = 1:nrow(parameters)
-data_list_kalman <- split(parameters, parameters$id)
+
 
 
 ######################################### fit data_rw:
@@ -1308,64 +1353,6 @@ list(hier = data.frame(fit$summary(hier_parameters),
 ```
 
 
-
-```{r}
-mu_alpha = seq(0.1,0.5, length.out = 5)
-kappa_alpha = seq(10,100, length.out = 2)
-
-mu_b0 = -1.5
-sd_b0 = 0.5
-
-mu_b1 = seq(0.1,2,length.out = 5)
-sd_b1 = seq(0.1,2,length.out = 3)
-
-mu_b2 = seq(0.1,2,length.out = 5)
-sd_b2 = seq(0.1,2,length.out = 3)
-
-
-mu_b0_b = -4
-sd_b0_b = 0.5
-
-mu_b1_b = 7
-sd_b1_b = 0.5
-
-mu_b2_b = 0.7
-sd_b2_b = 0.5
-
-sd_percept_precision = 0.8
-
-nsubs = 10
-
-parameters = expand.grid(mu_alpha = mu_alpha,
-                         kappa_alpha = kappa_alpha,
-                         mu_b0 = mu_b0,
-                         sd_b0 = sd_b0,
-                         mu_b1 = mu_b1,
-                         sd_b1 = sd_b1,
-                         mu_b2 = mu_b2,
-                         sd_b2 = sd_b2,
-                         mu_b0_b = mu_b0_b,
-                         sd_b0_b = sd_b0_b,
-                         mu_b1_b = mu_b1_b,
-                         sd_b1_b = sd_b1_b,
-                         mu_b2_b = mu_b2_b,
-                         sd_b2_b = sd_b2_b,
-                         sd_percept_precision = sd_percept_precision,
-                         nsubs = nsubs)
-
-
-
-parameters$id = 1:nrow(parameters)
-
-data_list <- split(parameters, parameters$id)
-
-plan(multisession, workers = 5)
-
-
-rw_pp = furrr::future_map(data_list, ~parameter_recovery_logistic_rw(.x), .progress = TRUE, .options = furrr_options(seed = 123))
-
-
-```
 
 <!-- ```{r fitting to real data tester hierachical RW seesion2} -->
 
