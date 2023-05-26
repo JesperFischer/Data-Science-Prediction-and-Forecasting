@@ -41,8 +41,8 @@ RW = function(dd){
     geom_line(aes(x = trial, y = desired))+
     facet_grid(alpha~w1, labeller = label_both)+
     theme_classic()+
-    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 5))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 5))
+    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))    
   
   
   plot2 = dd %>% ggplot(aes(exp, y = percept,col = precision_percept, group = interaction(stim, precision_percept)))+
@@ -50,8 +50,8 @@ RW = function(dd){
     facet_grid(alpha~w1, labeller = label_both)+
     geom_smooth(method = "lm")+
     theme_classic()+
-    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 4))+
-    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 4))+ theme(legend.position = "top")
+    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+ theme(legend.position = "top")+ theme(text = element_text(size = 14))    
   
  
   plot1+plot2
@@ -95,8 +95,8 @@ KALMAN = function(){
     geom_line(aes(x = trial, y = desired))+
     facet_grid(sigmaEta~sigmaPsi, labeller = label_both)+
     theme_classic()+
-    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 5))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 5))+ theme(legend.position = "none")
+    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+ theme(legend.position = "none")    
   
   
   
@@ -105,8 +105,8 @@ KALMAN = function(){
     geom_smooth(method = "lm")+
     facet_grid(sigmaEta~sigmaPsi, labeller = label_both)+
     theme_classic()+
-    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 5))+
-    scale_x_continuous("% belief of Stimulus being Hot", breaks = scales::pretty_breaks(n = 5))
+    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("% belief of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))    
   
   
   plot1+plot2+plot_layout(guides = 'collect')
@@ -153,8 +153,8 @@ KALMAN_v2 = function(dd){
     geom_line(aes(x = trial, y = desired))+
     facet_grid(sigmaEta~sigmaPsi, labeller = label_both)+
     theme_classic()+
-    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 5))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 5))+theme(legend.position = "top")
+    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")    
   
   
   
@@ -164,9 +164,9 @@ KALMAN_v2 = function(dd){
     geom_smooth(method = "lm")+
     facet_grid(sigmaEta~sigmaPsi, labeller = label_both)+
     theme_classic()+
-    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 4))+
-    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 4))+theme(legend.position = "top")+
-    ggtitle("precision percept = 155")
+    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")+
+    ggtitle("precision percept = 155")    
   
   
   plot1+plot2
@@ -215,8 +215,8 @@ WB = function(dd){
     geom_line(aes(x = trial, y = desired))+
     facet_grid(w1~w2, labeller = label_both)+
     theme_classic()+
-    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 5))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 5))+theme(legend.position = "top")
+    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")    
   
   
   dd$percept_precision = as.factor(dd$percept_precision)
@@ -226,9 +226,9 @@ WB = function(dd){
     geom_smooth(method = "lm")+
     facet_grid(w1~w2, labeller = label_both)+
     theme_classic()+
-    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 4))+
-    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 4))+theme(legend.position = "top")+
-    ggtitle("alpha = 0.3")
+    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")+
+    ggtitle("alpha = 0.3")    
   
   
   
@@ -286,8 +286,8 @@ RW_logistic_vis = function(dd){
     geom_line(aes(x = trial, y = desired))+
     facet_grid(alpha~b2, labeller = label_both)+
     theme_classic()+
-    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 5))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 5))
+    scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))    
   
   
   plot2 = dd %>% filter(alpha == 0.1) %>% ggplot(aes(expect, y = percept,col = percept_precision, group = interaction(stim, percept_precision)))+
@@ -295,8 +295,9 @@ RW_logistic_vis = function(dd){
     facet_grid(b1~b2, labeller = label_both)+
     geom_smooth(method = "lm")+
     theme_classic()+
-    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 4))+
-    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 4))+ theme(legend.position = "top")+ggtitle("Alpha = 0.1")
+    scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
+    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+ theme(legend.position = "top")+
+    ggtitle("Alpha = 0.1")    
   
   
   plot1+plot2
@@ -308,21 +309,23 @@ RW_logistic_vis = function(dd){
 plot_parameterrecovery = function(pp, div, subs){
   
   if(div){
-  hier_pp <- do.call(rbind, lapply(pp, "[[", 1))
-  sub_pp <- do.call(rbind, lapply(pp, "[[", 2))
+  hier_pp <- do.call(rbind, lapply(pp, "[[", 1)) %>% drop_na()
+  sub_pp <- do.call(rbind, lapply(pp, "[[", 2))%>% drop_na()
   }else{
-    hier_pp <- do.call(rbind, lapply(pp, "[[", 1)) %>% filter(div < 1)
-    sub_pp <- do.call(rbind, lapply(pp, "[[", 2)) %>% filter(div < 1)
+    hier_pp <- do.call(rbind, lapply(pp, "[[", 1)) %>% filter(div < 1)%>% drop_na()
+    sub_pp <- do.call(rbind, lapply(pp, "[[", 2)) %>% filter(div < 1)%>% drop_na()
   }
   
-  hier = hier_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
+  hier = hier_pp %>% mutate(divergences = ifelse(div > 0,"yes","no")) %>% 
     ggplot(aes(x = mean, y = reals.reals))+
-    {if(div)geom_point(aes(col = as.factor(divergences)))}+
     geom_point()+
+    {if(div)geom_point(aes(x = mean, y = reals.reals, col = as.factor(divergences)))}+
     facet_wrap(~variable, scales = "free")+
     theme_classic()+
     geom_abline(slope = 1, intercept = 0)+
-    scale_color_manual("divergence?",values = c("black","red"))
+    scale_color_manual("divergence",values = c("black","red"))+
+    scale_y_continuous("simulated value",breaks = scales::pretty_breaks(n = 4))+
+    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 4))
   
 
   # Generate the regular expression pattern dynamically
@@ -332,16 +335,30 @@ plot_parameterrecovery = function(pp, div, subs){
   sub_pp <- sub_pp[grepl(paste(pattern, collapse = "|"), sub_pp$variable), ]
   
   
-  sub = sub_pp %>% mutate(divergences = ifelse(div > 0,1,0)) %>% 
+  
+  sub = sub_pp %>% mutate(divergences = ifelse(div > 0,"yes","no")) %>% 
     ggplot(aes(x = mean, y = reals.reals))+
-    {if(div)geom_point(aes(col = as.factor(divergences)))}+
     geom_point()+
+    {if(div)geom_point(aes(col = as.factor(divergences)))}+
     facet_wrap(~variable, scales = "free", ncol = subs)+
     theme_classic()+
     geom_abline(slope = 1, intercept = 0)+
-    scale_color_manual("divergence?",values = c("black","red"))
+    scale_color_manual("divergence",values = c("black","red"))+
+    scale_y_continuous("simulated value",breaks = scales::pretty_breaks(n = 4))+
+    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 4))
   
-  return(list(hier = hier,sub = sub))
+  
+  
+  div = hier_pp %>% group_by(index) %>%
+    slice(1) %>%
+    ungroup() %>% ggplot(aes(x = div))+geom_histogram()+theme_classic()+
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 4))+
+    scale_x_continuous("Number of divergences", breaks = scales::pretty_breaks(n = 4))
+  
+  
+  
+  
+  return(list(hier = hier,sub = sub, div = div))
   
 }
 

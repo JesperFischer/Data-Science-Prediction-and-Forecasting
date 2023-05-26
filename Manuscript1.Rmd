@@ -178,13 +178,33 @@ kalman_pp = furrr::future_map(data_list, ~parameter_recovery_kalman(.x), .progre
 
 
 ```{r}
+
+files = paste0(here::here("workspace","parameterrecovery"),"/",list.files(here::here("workspace","parameterrecovery")))
+
+
 #plot parameterrecovery
-plot_parameterrecovery(rw_pp, div = F, subs = 5)
+load(files[[2]])
+q = lapply(here("scripts", scripts), source)
+rwplot = plot_parameterrecovery(rw_pp, div = T, subs = 5)
+load(files[[3]])
+q = lapply(here("scripts", scripts), source)
+wbplot = plot_parameterrecovery(wb_pp, div = T, subs = 5)
+load(files[[1]])
+q = lapply(here("scripts", scripts), source)
+kalmanplot = plot_parameterrecovery(kalman_pp, div = T, subs = 5)
 
-plot_parameterrecovery(wb_pp, div = F, subs = 5)
+layout = (c(
+  area(1, 1, 2,3),
+  area(3, 1,5,3),
+  area(6, 1,6,3)
+  
+))
 
+plot(layout)
 
-plot_parameterrecovery(kalman_pp, div = T, subs = 5)
+((rwplot[[1]]+wbplot[[1]]+kalmanplot[[1]])/(rwplot[[2]]+wbplot[[2]]+kalmanplot[[2]])/((rwplot[[3]]+wbplot[[3]]+kalmanplot[[3]])))+
+  plot_annotation(tag_levels = 'A')+
+  plot_layout(design = layout,guides = 'collect')
 
 ```
 
@@ -1296,11 +1316,11 @@ kappa_alpha = seq(10,100, length.out = 2)
 mu_b0 = -1.5
 sd_b0 = 0.5
 
-mu_b1 = 2
-sd_b1 = 0.5
+mu_b1 = seq(0.1,2,length.out = 5)
+sd_b1 = seq(0.1,2,length.out = 3)
 
-mu_b2 = 0.1
-sd_b2 = 0.5
+mu_b2 = seq(0.1,2,length.out = 5)
+sd_b2 = seq(0.1,2,length.out = 3)
 
 
 mu_b0_b = -4
