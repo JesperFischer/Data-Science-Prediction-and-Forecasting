@@ -39,12 +39,19 @@ transformed parameters{
   matrix<lower=0,upper=1>[ntrials, nsubs] perceptmu; 
   matrix<lower=0,upper=1>[ntrials+1, nsubs] expect;
   matrix<lower=0,upper=1>[ntrials+1, nsubs] association;
+  matrix<lower=0,upper=1>[ntrials+1, nsubs] ppred;
+  matrix<lower=0,upper=1>[ntrials, nsubs] p_percept_bin;
+  
+
   matrix[ntrials, nsubs] pe;
   
   for (s in 1:nsubs){
     
     association[1,s] = 0.5;
     expect[161,s] = 0.5;
+   
+    ppred[161,s] = (expect[161,s]^beta[s])/((expect[161,s]^beta[s])+(1-expect[161,s])^(beta[s]));
+      
   
     for (t in 1:ntrials){
       
@@ -65,6 +72,23 @@ transformed parameters{
         }
         
       association[t+1,s] = association[t,s] + alpha[s] * pe[t,s];
+      
+      ppred[t,s] = (expect[t,s]^beta[s])/((expect[t,s]^beta[s])+(1-expect[t,s])^(beta[s]));
+      
+      if(ppred[t,s] > 0.999){
+        ppred[t,s] = 0.999;
+      }else if(ppred[t,s] < 0.001){
+        ppred[t,s] = 0.001;
+      }
+
+      p_percept_bin[t,s] = (perceptmu[t,s]^beta[s])/((perceptmu[t,s]^beta[s])+(1-perceptmu[t,s])^(beta[s]));
+
+      if(p_percept_bin[t,s] > 0.999){
+        p_percept_bin[t,s] = 0.999;
+      }else if(p_percept_bin[t,s] < 0.001){
+        p_percept_bin[t,s] = 0.001;
+      }
+
     }
   }
 }
@@ -75,8 +99,8 @@ model {
     // generating data
     for (t in 1:ntrials){
       target += beta_proportion_lpdf(percept[t,s] | perceptmu[t,s], percept_precision[s]);
-      target += bernoulli_lpmf(percept_bin[t,s] | (perceptmu[t,s]^beta[s])/((perceptmu[t,s]^beta[s])+(1-perceptmu[t,s])^(beta[s])));
-      target += bernoulli_lpmf(pred[t,s] |  (expect[t,s]^beta[s])/((expect[t,s]^beta[s])+(1-expect[t,s])^(beta[s])));
+      target += bernoulli_lpmf(percept_bin[t,s] | p_percept_bin[t,s]);
+      target += bernoulli_lpmf(pred[t,s] |  ppred[t,s]);
     }
     // generating subject-level parameters
     target += beta_proportion_lpdf(alpha[s] | mu_alpha , kappa_alpha);
@@ -135,6 +159,10 @@ generated quantities{
   matrix <lower=0, upper  = 1> [ntrials, nsubs] prior_perceptmu; 
   matrix <lower=0, upper  = 1> [ntrials+1, nsubs] prior_association; 
   matrix <lower=0, upper  = 1> [ntrials+1, nsubs] prior_expect;
+  matrix <lower=0, upper  = 1> [ntrials+1, nsubs] prior_p_percept_bin;
+  matrix <lower=0, upper  = 1> [ntrials+1, nsubs] prior_ppred;
+  
+  
   matrix[ntrials, nsubs] prior_pe;
   
   matrix[ntrials, nsubs] prior_percept;
@@ -174,7 +202,10 @@ generated quantities{
 
     prior_association[1, s] = 0.5;
     prior_expect[161, s] = 0.5;
-      
+    
+
+    prior_ppred[161,s] = (prior_expect[161,s]^prior_beta[s])/((prior_expect[161,s]^prior_beta[s])+(1-prior_expect[161,s])^(prior_beta[s]));
+    
     for (t in 1:ntrials){
       
       
@@ -196,19 +227,36 @@ generated quantities{
   
       prior_association[t+1,s] = prior_association[t,s] + prior_alpha[s] * prior_pe[t,s];
     
+      prior_ppred[t,s] = (prior_expect[t,s]^prior_beta[s])/((prior_expect[t,s]^prior_beta[s])+(1-prior_expect[t,s])^(prior_beta[s]));
+      
+      if(prior_ppred[t,s] > 0.999){
+        prior_ppred[t,s] = 0.999;
+      }else if(prior_ppred[t,s] < 0.001){
+        prior_ppred[t,s] = 0.001;
+      }
+
+      prior_p_percept_bin[t,s] = (prior_perceptmu[t,s]^prior_beta[s])/((prior_perceptmu[t,s]^prior_beta[s])+(1-prior_perceptmu[t,s])^(prior_beta[s]));
+
+      if(prior_p_percept_bin[t,s] > 0.999){
+        prior_p_percept_bin[t,s] = 0.999;
+      }else if(prior_p_percept_bin[t,s] < 0.001){
+        prior_p_percept_bin[t,s] = 0.001;
+      }
+    
+    
     
       prior_percept[t,s] = beta_proportion_rng(prior_perceptmu[t,s], prior_percept_precision[s]);
       
-      prior_percept_bin[t,s] = bernoulli_rng((prior_perceptmu[t,s]^prior_beta[s])/((prior_perceptmu[t,s]^prior_beta[s])+(1-prior_perceptmu[t,s])^(prior_beta[s])));
+      prior_percept_bin[t,s] = bernoulli_rng(prior_p_percept_bin[t,s]);
 
-      prior_expectPain[t,s] = bernoulli_rng((prior_expect[t,s]^prior_beta[s])/((prior_expect[t,s]^prior_beta[s])+(1-prior_expect[t,s])^(prior_beta[s])));
+      prior_expectPain[t,s] = bernoulli_rng(prior_ppred[t,s]);
       
       
       post_percept[t,s] = beta_proportion_rng(perceptmu[t,s], percept_precision[s]);
       
-      post_percept_bin[t,s] = bernoulli_rng((perceptmu[t,s]^beta[s])/((perceptmu[t,s]^beta[s])+(1-perceptmu[t,s])^(beta[s])));
+      post_percept_bin[t,s] = bernoulli_rng(p_percept_bin[t,s]);
 
-      post_expectPain[t,s] = bernoulli_rng((expect[t,s]^beta[s])/((expect[t,s]^beta[s])+(1-expect[t,s])^(beta[s])));
+      post_expectPain[t,s] = bernoulli_rng(ppred[t,s]);
       
       
       log_lik[t,s] = bernoulli_lpmf(percept_bin[t,s] | (perceptmu[t,s]^beta[s])/((perceptmu[t,s]^beta[s])+(1-perceptmu[t,s])^(beta[s])))+

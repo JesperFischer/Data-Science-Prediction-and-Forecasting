@@ -42,7 +42,7 @@ RW = function(dd){
     facet_grid(alpha~w1, labeller = label_both)+
     theme_classic()+
     scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))    
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+theme(text = element_text(size = 20))
   
   
   plot2 = dd %>% ggplot(aes(exp, y = percept,col = precision_percept, group = interaction(stim, precision_percept)))+
@@ -51,7 +51,7 @@ RW = function(dd){
     geom_smooth(method = "lm")+
     theme_classic()+
     scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
-    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+ theme(legend.position = "top")+ theme(text = element_text(size = 14))    
+    scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+ theme(legend.position = "top")+ theme(text = element_text(size = 20))    
   
  
   plot1+plot2
@@ -154,7 +154,7 @@ KALMAN_v2 = function(dd){
     facet_grid(sigmaEta~sigmaPsi, labeller = label_both)+
     theme_classic()+
     scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")    
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")+theme(text = element_text(size = 20))    
   
   
   
@@ -166,7 +166,7 @@ KALMAN_v2 = function(dd){
     theme_classic()+
     scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
     scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")+
-    ggtitle("precision percept = 155")    
+    ggtitle("precision percept = 155")+theme(text = element_text(size = 20))
   
   
   plot1+plot2
@@ -216,7 +216,7 @@ WB = function(dd){
     facet_grid(w1~w2, labeller = label_both)+
     theme_classic()+
     scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")    
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")+theme(text = element_text(size = 20))    
   
   
   dd$percept_precision = as.factor(dd$percept_precision)
@@ -228,7 +228,7 @@ WB = function(dd){
     theme_classic()+
     scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
     scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+theme(legend.position = "top")+
-    ggtitle("alpha = 0.3")    
+    ggtitle("alpha = 0.3")+theme(text = element_text(size = 20))
   
   
   
@@ -287,7 +287,7 @@ RW_logistic_vis = function(dd){
     facet_grid(alpha~b2, labeller = label_both)+
     theme_classic()+
     scale_y_continuous("Cue-stimulus association", breaks = scales::pretty_breaks(n = 3))+
-    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))    
+    scale_x_continuous("Trial", breaks = scales::pretty_breaks(n = 3))+theme(text = element_text(size = 20))    
   
   
   plot2 = dd %>% filter(alpha == 0.1) %>% ggplot(aes(expect, y = percept,col = percept_precision, group = interaction(stim, percept_precision)))+
@@ -297,7 +297,7 @@ RW_logistic_vis = function(dd){
     theme_classic()+
     scale_y_continuous("Mean of percept", breaks = scales::pretty_breaks(n = 3))+
     scale_x_continuous("% Expectation of Stimulus being Hot", breaks = scales::pretty_breaks(n = 3))+ theme(legend.position = "top")+
-    ggtitle("Alpha = 0.1")    
+    ggtitle("Alpha = 0.1")+theme(text = element_text(size = 20))    
   
   
   plot1+plot2
