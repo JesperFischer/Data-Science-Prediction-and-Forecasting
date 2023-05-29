@@ -74,20 +74,10 @@ transformed parameters{
       association[t+1,s] = association[t,s] + alpha[s] * pe[t,s];
       
       ppred[t,s] = (expect[t,s]^beta[s])/((expect[t,s]^beta[s])+(1-expect[t,s])^(beta[s]));
-      
-      if(ppred[t,s] > 0.999){
-        ppred[t,s] = 0.999;
-      }else if(ppred[t,s] < 0.001){
-        ppred[t,s] = 0.001;
-      }
 
       p_percept_bin[t,s] = (perceptmu[t,s]^beta[s])/((perceptmu[t,s]^beta[s])+(1-perceptmu[t,s])^(beta[s]));
 
-      if(p_percept_bin[t,s] > 0.999){
-        p_percept_bin[t,s] = 0.999;
-      }else if(p_percept_bin[t,s] < 0.001){
-        p_percept_bin[t,s] = 0.001;
-      }
+
 
     }
   }
@@ -159,7 +149,7 @@ generated quantities{
   matrix <lower=0, upper  = 1> [ntrials, nsubs] prior_perceptmu; 
   matrix <lower=0, upper  = 1> [ntrials+1, nsubs] prior_association; 
   matrix <lower=0, upper  = 1> [ntrials+1, nsubs] prior_expect;
-  matrix <lower=0, upper  = 1> [ntrials+1, nsubs] prior_p_percept_bin;
+  matrix <lower=0, upper  = 1> [ntrials, nsubs] prior_p_percept_bin;
   matrix <lower=0, upper  = 1> [ntrials+1, nsubs] prior_ppred;
   
   
@@ -229,20 +219,9 @@ generated quantities{
     
       prior_ppred[t,s] = (prior_expect[t,s]^prior_beta[s])/((prior_expect[t,s]^prior_beta[s])+(1-prior_expect[t,s])^(prior_beta[s]));
       
-      if(prior_ppred[t,s] > 0.999){
-        prior_ppred[t,s] = 0.999;
-      }else if(prior_ppred[t,s] < 0.001){
-        prior_ppred[t,s] = 0.001;
-      }
 
       prior_p_percept_bin[t,s] = (prior_perceptmu[t,s]^prior_beta[s])/((prior_perceptmu[t,s]^prior_beta[s])+(1-prior_perceptmu[t,s])^(prior_beta[s]));
 
-      if(prior_p_percept_bin[t,s] > 0.999){
-        prior_p_percept_bin[t,s] = 0.999;
-      }else if(prior_p_percept_bin[t,s] < 0.001){
-        prior_p_percept_bin[t,s] = 0.001;
-      }
-    
     
     
       prior_percept[t,s] = beta_proportion_rng(prior_perceptmu[t,s], prior_percept_precision[s]);

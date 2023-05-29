@@ -315,6 +315,10 @@ plot_parameterrecovery = function(pp, div, subs){
     hier_pp <- do.call(rbind, lapply(pp, "[[", 1)) %>% filter(div < 1)%>% drop_na()
     sub_pp <- do.call(rbind, lapply(pp, "[[", 2)) %>% filter(div < 1)%>% drop_na()
   }
+  if(length(unique(hier_pp$variable)) == 15){
+    hier_pp <- hier_pp[!grepl("_b$", hier_pp$variable), ]
+    
+  }
   
   hier = hier_pp %>% mutate(divergences = ifelse(div > 0,"yes","no")) %>% 
     ggplot(aes(x = mean, y = reals.reals))+
@@ -324,8 +328,8 @@ plot_parameterrecovery = function(pp, div, subs){
     theme_classic()+
     geom_abline(slope = 1, intercept = 0)+
     scale_color_manual("divergence",values = c("black","red"))+
-    scale_y_continuous("simulated value",breaks = scales::pretty_breaks(n = 4))+
-    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 4))
+    scale_y_continuous("simulated value",breaks = scales::pretty_breaks(n = 2))+
+    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 2))+theme(text = element_text(size = 20))
   
 
   # Generate the regular expression pattern dynamically
@@ -344,16 +348,16 @@ plot_parameterrecovery = function(pp, div, subs){
     theme_classic()+
     geom_abline(slope = 1, intercept = 0)+
     scale_color_manual("divergence",values = c("black","red"))+
-    scale_y_continuous("simulated value",breaks = scales::pretty_breaks(n = 4))+
-    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 4))
+    scale_y_continuous("simulated value",breaks = scales::pretty_breaks(n = 2))+
+    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 2))+theme(text = element_text(size = 20))
   
   
   
   div = hier_pp %>% group_by(index) %>%
     slice(1) %>%
     ungroup() %>% ggplot(aes(x = div))+geom_histogram()+theme_classic()+
-    scale_y_continuous(breaks = scales::pretty_breaks(n = 4))+
-    scale_x_continuous("Number of divergences", breaks = scales::pretty_breaks(n = 4))
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 2))+
+    scale_x_continuous("Number of divergences", breaks = scales::pretty_breaks(n = 2))+theme(text = element_text(size = 20))
   
   
   
@@ -363,7 +367,30 @@ plot_parameterrecovery = function(pp, div, subs){
 }
 
 
-get_corplot = function(fit1,fit2,variable){
+get_correlation = function(fit1,fit2,variable){
+  df1 = (fit1$summary(variables = variable))
+  df2 = (fit2$summary(variables = variable))
+  
+  df1$sess = df2$mean
+  
+  df1$sess_sd = df2$sd
+  
+  alpha1draws = as.data.frame(as_draws_df(fit1$draws(variable = variable))%>% select(starts_with(variable)))
+  alpha2draws = as.data.frame(as_draws_df(fit2$draws(variable = variable))%>% select(starts_with(variable)))
+  
+  
+  correlation_draws <- numeric(length = nrow(alpha1draws))
+  
+  for (i in 1:nrow(alpha1draws)) {
+    correlation_draws[i] <- cor(t(alpha1draws[i, ]), t(alpha2draws[i, ]))
+  }
+  
+  correlation = as.data.frame(correlation_draws) %>% rename(correlation = correlation_draws)
+  return(correlation)
+}
+
+
+get_corplot = function(fit1,fit2,variable,ymin,ymax,xmin,xmax){
 
 
   df1 = (fit1$summary(variables = variable))
@@ -373,22 +400,68 @@ get_corplot = function(fit1,fit2,variable){
   
   df1$sess_sd = df2$sd
   
+  alpha1draws = as.data.frame(as_draws_df(fit1$draws(variable = variable))%>% select(starts_with(variable)))
+  alpha2draws = as.data.frame(as_draws_df(fit2$draws(variable = variable))%>% select(starts_with(variable)))
   
-  #fit <- lsfit(x = df1$sess, y = df1$mean, weights = list(x = df1$sess_sd, y = df1$sd))
   
-  # Extract the correlation coefficient
-  #correlation <- cor(fit$residuals$x, fit$residuals$y)
+  correlation_draws <- numeric(length = nrow(alpha1draws))
+  
+  for (i in 1:nrow(alpha1draws)) {
+    correlation_draws[i] <- cor(t(alpha1draws[i, ]), t(alpha2draws[i, ]))
+  }
+  
+  correlation = as.data.frame(correlation_draws) %>% rename(correlation = correlation_draws)
+  
+  correlationplot = correlation %>% ggplot(aes(x = correlation))+
+    geom_histogram()+
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 2))+
+    theme_classic()+ylab(" ")+xlab("Post. Correlation")+theme(text = element_text(size = 20))
   
 
   plot = df1 %>% ggplot(aes(x = mean, y = sess)) +
     geom_point() +
     geom_errorbar(aes(ymin = sess - sess_sd, ymax = sess + sess_sd), width = 0.005,linetype = "dashed") +
     geom_errorbarh(aes(xmin = mean - sd, xmax = mean + sd), height = 0.005,linetype = "dashed") +
-    labs(x = "Session 1", y = "Session 2") +
-    ggtext::geom_richtext(aes(x = min(mean)+sd(mean), y = max(sess),
-                              label = paste0("r = ",round(cor.test(df1$mean, df1$sess)$estimate[[1]],2), " [", round(cor.test(df1$mean, df1$sess)$conf.int[[1]],2)," ; ", round(cor.test(df1$mean, df1$sess)$conf.int[[2]],2),"]")))+ggtitle(paste0("test retest correlation of ",variable))+
-    theme_classic()
+    labs(x = "Session 1", y = "Session 2")+
+    theme_classic()+ggtitle(paste0("Correlation between sessions of ", variable))+theme(text = element_text(size = 20))
+
   
-  return(plot)
+
   
+  return(plot+annotation_custom(ggplotGrob(correlationplot), ymin = ymin,ymax = ymax, xmin = xmin, xmax = xmax))
+  
+}
+
+
+
+get_corplotreal = function(fit, variable,ymin,ymax,xmin,xmax){
+  
+  
+  alpha = fit$summary(variable = variable)
+  
+  sess1 <- alpha %>% filter(grepl("1]$", variable))
+  sess2 <- alpha %>% filter(grepl("2]$", variable))
+  
+  sess1$sess = sess2$mean
+  sess1$sess_sd = sess2$sd
+  
+  correlation = as_draws_df(fit$draws(variable = paste0("correlation_",variable)))
+  names(correlation) = c("correlation","chain","iter","draw")
+  
+  correlationnonan = correlation %>% drop_na()
+  
+  correlationplot = correlation %>% ggplot(aes(x = correlation))+
+    geom_histogram()+
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 2))+
+    theme_classic()+ylab(" ")+xlab("Post. Correlation")+theme(text = element_text(size = 20))
+  
+  plot = sess1 %>% ggplot(aes(x = mean, y = sess)) +
+    geom_point() +
+    geom_errorbar(aes(ymin = sess - sess_sd, ymax = sess + sess_sd), width = 0.005,linetype = "dashed") +
+    geom_errorbarh(aes(xmin = mean - sd, xmax = mean + sd), height = 0.005,linetype = "dashed") +
+    labs(x = "Session 1", y = "Session 2")+
+    theme_classic()+ggtitle(paste0("Correlation between sessions of ",variable))+theme(text = element_text(size = 20))
+
+  
+  return(plot+annotation_custom(ggplotGrob(correlationplot), ymin = ymin,ymax = ymax, xmin = xmin, xmax = xmax))
 }

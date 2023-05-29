@@ -96,30 +96,30 @@ model {
     target += beta_lpdf(mu_alpha[sess] | 1,1);
     target += lognormal_lpdf(kappa_alpha[sess] | log(20),0.6);
     
-    target +=normal_lpdf(mu_b0[sess] | 0,1);
+    target +=normal_lpdf(mu_b0[sess] | 0,2);
     target +=lognormal_lpdf(sd_b0[sess] | 0,0.5);
     
-    target +=normal_lpdf(mu_b1[sess] | 0,1);
+    target +=normal_lpdf(mu_b1[sess] | 0,2);
     target +=lognormal_lpdf(sd_b1[sess] | 0,0.5);
     
-    target +=normal_lpdf(mu_b2[sess] | 0,1);
+    target +=normal_lpdf(mu_b2[sess] | 0,2);
     target +=lognormal_lpdf(sd_b2[sess] | 0,0.5);
     
     
     
-    target +=normal_lpdf(mu_b0_b[sess] | 0,1);
+    target +=normal_lpdf(mu_b0_b[sess] | 0,2);
     target +=lognormal_lpdf(sd_b0_b[sess] | 0,0.5);
     
-    target +=normal_lpdf(mu_b1_b[sess] | 0,1);
+    target +=normal_lpdf(mu_b1_b[sess] | 0,2);
     target +=lognormal_lpdf(sd_b1_b[sess] | 0,0.5);
     
     
-    target +=normal_lpdf(mu_b2_b[sess] | 0,1);
+    target +=normal_lpdf(mu_b2_b[sess] | 0,2);
     target +=lognormal_lpdf(sd_b2_b[sess] | 0,0.5);
     
     
     
-    target += exponential_lpdf(sd_percept_precision[sess] | 0.1);
+    target += exponential_lpdf(sd_percept_precision[sess] | 0.5);
   
       
     for (s in 1:nsubs){
@@ -178,6 +178,94 @@ generated quantities{
 
   array[nsubs] real product_diff_b2;
   
+  
+  real correlation_b1;
+  real sum_squared_diff_b1;
+  real sum_product_diff_b1;
+
+  array[nsubs] real diff_s1_b1;
+  array[nsubs] real diff_s2_b1;
+  array[nsubs] real sq_diff_s1_b1;
+  array[nsubs] real sq_diff_s2_b1;
+
+  array[nsubs] real product_diff_b1;
+  
+  
+  real correlation_b1_b;
+  real sum_squared_diff_b1_b;
+  real sum_product_diff_b1_b;
+
+  array[nsubs] real diff_s1_b1_b;
+  array[nsubs] real diff_s2_b1_b;
+  array[nsubs] real sq_diff_s1_b1_b;
+  array[nsubs] real sq_diff_s2_b1_b;
+
+  array[nsubs] real product_diff_b1_b;
+  
+  
+    real correlation_b2_b;
+  real sum_squared_diff_b2_b;
+  real sum_product_diff_b2_b;
+
+  array[nsubs] real diff_s1_b2_b;
+  array[nsubs] real diff_s2_b2_b;
+  array[nsubs] real sq_diff_s1_b2_b;
+  array[nsubs] real sq_diff_s2_b2_b;
+
+  array[nsubs] real product_diff_b2_b;
+  
+  for (s in 1:nsubs){
+    diff_s1_b2_b[s] = mean(b2_b[,1])-b2_b[s,1];
+    diff_s2_b2_b[s] = mean(b2_b[,2])-b2_b[s,2];
+    
+    product_diff_b2_b[s] = diff_s1_b2_b[s] * diff_s2_b2_b[s];
+    
+    sq_diff_s1_b2_b[s] = (mean(b2_b[,1])-b2_b[s,1])^2;
+    sq_diff_s2_b2_b[s] = (mean(b2_b[,2])-b2_b[s,2])^2;
+  }
+  
+  sum_squared_diff_b2_b = sum(sq_diff_s1_b2_b) * sum(sq_diff_s2_b2_b);
+  
+  sum_product_diff_b2_b = sum(product_diff_b2_b);
+
+  correlation_b2_b = sum_product_diff_b2_b / sqrt(sum_squared_diff_b2_b);
+  
+  for (s in 1:nsubs){
+    diff_s1_b1_b[s] = mean(b1_b[,1])-b1_b[s,1];
+    diff_s2_b1_b[s] = mean(b1_b[,2])-b1_b[s,2];
+    
+    product_diff_b1_b[s] = diff_s1_b1_b[s] * diff_s2_b1_b[s];
+    
+    sq_diff_s1_b1_b[s] = (mean(b1_b[,1])-b1_b[s,1])^2;
+    sq_diff_s2_b1_b[s] = (mean(b1_b[,2])-b1_b[s,2])^2;
+  }
+  
+  sum_squared_diff_b1_b = sum(sq_diff_s1_b1_b) * sum(sq_diff_s2_b1_b);
+  
+  sum_product_diff_b1_b = sum(product_diff_b1_b);
+
+  correlation_b1_b = sum_product_diff_b1_b / sqrt(sum_squared_diff_b1_b);
+  
+  
+  for (s in 1:nsubs){
+    diff_s1_b1[s] = mean(b1[,1])-b1[s,1];
+    diff_s2_b1[s] = mean(b1[,2])-b1[s,2];
+    
+    product_diff_b1[s] = diff_s1_b1[s] * diff_s2_b1[s];
+    
+    sq_diff_s1_b1[s] = (mean(b1[,1])-b1[s,1])^2;
+    sq_diff_s2_b1[s] = (mean(b1[,2])-b1[s,2])^2;
+  }
+  
+  sum_squared_diff_b1 = sum(sq_diff_s1_b1) * sum(sq_diff_s2_b1);
+  
+  sum_product_diff_b1 = sum(product_diff_b1);
+
+  correlation_b1 = sum_product_diff_b1 / sqrt(sum_squared_diff_b1);
+  
+  
+  
+  
   for (s in 1:nsubs){
     diff_s1_b2[s] = mean(b2[,1])-b2[s,1];
     diff_s2_b2[s] = mean(b2[,2])-b2[s,2];
@@ -196,6 +284,8 @@ generated quantities{
   
       
       
+        
+        
         
   for (s in 1:nsubs){
     diff_s1_alpha[s] = mean(alpha[,1])-alpha[s,1];

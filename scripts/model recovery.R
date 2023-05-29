@@ -151,7 +151,7 @@ model_fitter_kalmandata = function(parameters_kalman){
   
   
   rw_model = here::here("Stan","myRW_real.stan")
-  wb_model = here::here("Stan","hier_weighted_bayes.stan")
+  wb_model = here::here("Stan","hier_weighted_bayes2.stan")
   logs = here::here("Stan","rw_vs_rw_hier_complete.stan")
   
   
@@ -169,7 +169,7 @@ model_fitter_kalmandata = function(parameters_kalman){
   
   loo_kalman_rw = get_loo(rw_model, data1_kalman_rw)
   loo_kalman_wb = get_loo(wb_model, data1_kalman_wb)
-  loo_kalman_kalman = get_loo(kalman_model, data1_kalman)
+  loo_kalman_kalman = get_loo(logs, data1_kalman)
 
   id = rnorm(1,0,1)
   
@@ -200,7 +200,7 @@ get_loo = function(file, data1){
     seed = 123, 
     chains = 4, 
     parallel_chains = 4,
-    refresh = 500
+    refresh = 100
   )
   
   loglik = as_draws_df(fit$draws(variables = "log_lik")) %>% drop_na()

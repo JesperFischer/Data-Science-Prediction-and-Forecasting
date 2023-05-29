@@ -166,11 +166,35 @@ $$
 For the derivation of equation 15 and 16 readers are refereed to the supplementary material.
 
 
+#supplementary
 
+showing equation (15 and 16)
+Starting of with the mean of the precept
 
-```{r}
+$$
+\begin{equation}
+\mu_{\psi_t} = \frac{\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}*\mu_{E_{t-1}}+\frac{\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}*S_t
+\end{equation}
+$$
+using (13) we need to show the following
 
+$$
+\begin{equation}
+(1-\gamma) = \frac{\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}
+\end{equation}
+$$
+Now uterlising the fact that if $x = \frac{a}{b}$ then $1-x = \frac{(b-a)}{b}$
 
+$$
+\begin{equation}
+(1-\gamma) = \frac{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2-\sigma_{s}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}
+\end{equation}
+$$
+which gives exactly
 
-```
+$$
+\begin{equation}
+(1-\gamma) = \frac{\sigma_{\psi}^2+\sigma_{E_t}^2}{\sigma_{s}^2+\sigma_{\psi}^2+\sigma_{E_t}^2}
+\end{equation}
+$$
 
