@@ -1,0 +1,2 @@
+"0","knitr::opts_chunk$set(echo = TRUE)"
+"0","pacman::p_load(tidyverse, osfr, lmerTest, MuMIn, DHARMa, here, cmdstanr, tidybayes, bayesplot, posterior,future,furrr, patchwork)"

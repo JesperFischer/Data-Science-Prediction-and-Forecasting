@@ -1,0 +1,38 @@
+"0","
+mu_sigmaEta = seq(0.1,1,length.out = 2)
+mu_sigmaPsi = seq(0.1,5,length.out = 2)
+mu_sigmaEpsilon = seq(0.1,5,length.out = 2)
+
+
+sd_sigmaEta = seq(0.1,1,length.out = 2)
+sd_sigmaPsi = seq(0.1,1,length.out = 2)
+sd_sigmaEpsilon = seq(0.1,1,length.out = 2)
+
+sd_precision_percept = seq(0.1,1, length.out = 2)
+
+sd_beta = seq(0.1,1, length.out = 2)
+
+
+
+nsubs = 10
+
+parameters = expand.grid(mu_sigmaEta = mu_sigmaEta,
+                         mu_sigmaPsi = mu_sigmaPsi,
+                         mu_sigmaEpsilon = mu_sigmaEpsilon,
+                         sd_sigmaEta = sd_sigmaEta,
+                         sd_sigmaPsi = sd_sigmaPsi,
+                         sd_sigmaEpsilon = sd_sigmaEpsilon,
+                         sd_precision_percept = sd_precision_percept, 
+                         sd_beta = sd_beta,
+                         nsubs = nsubs)
+
+parameters$id = 1:nrow(parameters)
+
+data_list <- split(parameters, parameters$id)
+
+
+
+plan(multisession, workers = availableCores()-1)
+"
+"2","Error: Cannot create 127 parallel PSOCK nodes. Each node needs one connection, but there are only 124 connections left out of the maximum 128 available on this R installation
+"

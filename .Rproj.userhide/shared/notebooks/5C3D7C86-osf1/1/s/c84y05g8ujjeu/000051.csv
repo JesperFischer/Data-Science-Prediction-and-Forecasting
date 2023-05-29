@@ -1,0 +1,6 @@
+"0","diag_sigmaEta = get_diag(fit = fit,
+         parameter = ""sigmaEta"")
+"
+"2","Error in h(simpleError(msg, call)) : 
+  error in evaluating the argument 'x' in selecting a method for function 'which': error in evaluating the argument 'x' in selecting a method for function 'rowSums': invalid argument type
+"

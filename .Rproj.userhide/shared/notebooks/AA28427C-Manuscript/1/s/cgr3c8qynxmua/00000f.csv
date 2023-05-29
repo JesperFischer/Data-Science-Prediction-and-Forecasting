@@ -1,0 +1,4 @@
+"0","elpld_loo <- map_dfr(rw_loo, ~ .x[[1]])
+"
+"2","Error: object 'rw_loo' not found
+"

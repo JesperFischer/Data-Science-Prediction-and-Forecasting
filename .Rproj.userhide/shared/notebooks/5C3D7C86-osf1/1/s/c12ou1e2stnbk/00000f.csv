@@ -1,0 +1,14 @@
+"0","osf_auth(token = readLines(""osf.txt"")[[1]])"
+"2","Registered PAT from the provided token
+"
+"0","project = osf_retrieve_node(""https://osf.io/bqkz3/"")"
+"0",""
+"0",""
+"0","project %>% osf_ls_files() %>% osf_download(path = here::here(""osf""))"
+"1","[1m[33mError[39m in `check_local_dir()`:[22m
+[33m![39m `path` must point to an existing local directory.
+Backtrace:
+[90m 1. [39mproject %>% osf_ls_files() %>% ...
+[90m 3. [39m[1mosfr[22m:::osf_download.osf_tbl_file(., path = here::here(""osf""))
+[90m 4. [39m[1m[94mosfr:::check_local_dir([39m[22mpath[1m[94m)[39m[22m
+"
