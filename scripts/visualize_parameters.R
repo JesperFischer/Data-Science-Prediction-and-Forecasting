@@ -306,7 +306,7 @@ RW_logistic_vis = function(dd){
 
 
 
-plot_parameterrecovery = function(pp, div, subs){
+plot_parameterrecovery = function(pp, div, subs, title){
   
   if(div){
   hier_pp <- do.call(rbind, lapply(pp, "[[", 1)) %>% drop_na()
@@ -317,7 +317,7 @@ plot_parameterrecovery = function(pp, div, subs){
   }
   if(length(unique(hier_pp$variable)) == 15){
     hier_pp <- hier_pp[!grepl("_b$", hier_pp$variable), ]
-    
+    sub_pp <- sub_pp[!grepl("_b\\[\\d+\\]", sub_pp$variable), ]
   }
   
   hier = hier_pp %>% mutate(divergences = ifelse(div > 0,"yes","no")) %>% 
@@ -329,7 +329,7 @@ plot_parameterrecovery = function(pp, div, subs){
     geom_abline(slope = 1, intercept = 0)+
     scale_color_manual("divergence",values = c("black","red"))+
     scale_y_continuous("simulated value",breaks = scales::pretty_breaks(n = 2))+
-    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 2))+theme(text = element_text(size = 20))
+    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 2))+theme(text = element_text(size = 20))+ggtitle(title)
   
 
   # Generate the regular expression pattern dynamically
@@ -349,7 +349,7 @@ plot_parameterrecovery = function(pp, div, subs){
     geom_abline(slope = 1, intercept = 0)+
     scale_color_manual("divergence",values = c("black","red"))+
     scale_y_continuous("simulated value",breaks = scales::pretty_breaks(n = 2))+
-    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 2))+theme(text = element_text(size = 20))
+    scale_x_continuous("Recovered value", breaks = scales::pretty_breaks(n = 2))+theme(text = element_text(size = 20))+ggtitle(title)
   
   
   

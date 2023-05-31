@@ -240,16 +240,16 @@ files = paste0(here::here("workspace","parameterrecovery"),"/",list.files(here::
 #plot parameterrecovery
 load(files[[1]])
 q = lapply(here("scripts", scripts), source)
-kalmanplot = plot_parameterrecovery(kalman_pp, div = T, subs = 5)
+kalmanplot = plot_parameterrecovery(kalman_pp, div = T, subs = 5, "Kalman filter")
 load(files[[2]])
 q = lapply(here("scripts", scripts), source)
-logisticplot = plot_parameterrecovery(rw_pp_logs, div = F, subs = 5)
+logisticplot = plot_parameterrecovery(rw_pp_logs, div = F, subs = 5,"Logistic RW")
 load(files[[3]])
 q = lapply(here("scripts", scripts), source)
-rwplot = plot_parameterrecovery(rw_pp, div = T, subs = 5)
+rwplot = plot_parameterrecovery(rw_pp, div = T, subs = 5,"Rescorla Wagner")
 load(files[[4]])
 q = lapply(here("scripts", scripts), source)
-wbplot = plot_parameterrecovery(wb_pp, div = T, subs = 5)
+wbplot = plot_parameterrecovery(wb_pp, div = T, subs = 5,"Weighted bayes")
 
 
 
@@ -454,6 +454,22 @@ wbdata = get_value(wb_loo)
 ```
 
 
+
+
+```{r getting temperatures}
+
+# Create a function to assign temperature indicator based on a threshold
+assign_indicator <- function(temperature, threshold) {
+  ifelse(temperature <= threshold, "Low", "High")
+}
+
+# Calculate the threshold for each ID and session
+df$threshold <- ave(df$temperature, df$id, df$session, FUN = median)
+
+# Create the indicator column
+df$temperature_indicator <- mapply(assign_indicator, df$temperature, df$threshold)
+```
+
 ### fitting the models to session 1's data
 
 ```{r fitting RW model to session 1}
@@ -574,7 +590,7 @@ df= read.csv(here::here("data","data_TPL_AC.csv")) %>%
   rename_all(tolower) %>%
   filter(trial != 0) %>%
   rename(id = participant, stim = stimulus, percept = rating, pred = prediction, percept_bin = quality) %>%
-  mutate_all(replace_na, 0)
+  mutate_all(replace_na, 0)git 
 
 df$u = ifelse(df$cue == 1 & df$stim == 1, 1, ifelse(df$cue == 0 & df$stim == 0, 1,0))
 df$pred = ifelse(df$cue == 1 & df$pred == 1, 1, ifelse(df$cue == 0 & df$pred == 0, 1,0))
